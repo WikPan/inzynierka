@@ -1,21 +1,31 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from './users/users.module'; // <- upewnij się, że ścieżka jest poprawna
-import { AppDataSource } from './data-source';
+import { ConfigModule } from '@nestjs/config';
+import { UsersModule } from './users/users.module';
+import { OffersModule } from './offers/offers.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // dzięki temu process.env działa wszędzie
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST ?? 'localhost',
+      host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT ?? '5432'),
-      username: process.env.DB_USER ?? 'postgres',
-      password: process.env.DB_PASS ?? 'postgres',
-      database: process.env.DB_NAME ?? 'inzynierka',
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false,
+      autoLoadEntities: true,
     }),
-    UsersModule, // <- musi być tutaj!
+    UsersModule,
+    OffersModule,
+    ReviewsModule,
+    MessagesModule,
   ],
 })
 export class AppModule {}

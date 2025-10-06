@@ -1,0 +1,15 @@
+FROM node:18
+
+WORKDIR /app
+
+# Kopiujemy tylko JSONy, by cache’ować npm install
+COPY package*.json tsconfig*.json ./
+RUN npm ci
+
+# Reszta kodu
+COPY . .
+
+EXPOSE 3000
+
+# Uruchomienie w trybie deweloperskim (ts-node-dev / nodemon)
+CMD ["npm", "run", "start:dev"]

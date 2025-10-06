@@ -1,18 +1,24 @@
-import { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import { useState } from "react";
 
-function App() {
-  const [msg, setMsg] = useState("");
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-useEffect(() => {
-  fetch("http://localhost:3000/users")
-    .then(res => res.json())
-    .then(data => console.log(data))
-    .catch(err => console.error(err));
-}, []);
+  return (
+    <div>
+      {/* 🔹 Nawigacja widoczna na każdej stronie */}
+      <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
 
-
-
-  return <h1>{msg || "Łączenie z backendem..."}</h1>;
+      {/* 🔹 Główna treść stron */}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </div>
+  );
 }
-
-export default App;

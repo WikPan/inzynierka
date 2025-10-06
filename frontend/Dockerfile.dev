@@ -1,0 +1,15 @@
+FROM node:20
+
+WORKDIR /app
+
+# Cache’ujemy instalację zależności
+COPY package*.json vite.config.ts ./
+RUN npm ci
+
+# Reszta aplikacji
+COPY . .
+
+EXPOSE 5173
+
+# Vite w trybie dev, dostępne z zewnątrz
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
