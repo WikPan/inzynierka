@@ -1,11 +1,17 @@
 import { useState } from "react";
+import { registerUser } from "../api/users.ts";
 
 export default function Register() {
   const [login, setLogin] = useState("");
   const [email, setEmail] = useState("");
 
-  const handleRegister = () => {
-    alert(`Zarejestrowano: ${login}, email: ${email}`);
+  const handleRegister = async () => {
+    try {
+      const data = await registerUser({ login, email });
+      alert(data.message);
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   return (

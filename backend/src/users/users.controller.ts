@@ -16,9 +16,16 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Post()
-  create(@Body() body: Partial<User>) {
-    return this.usersService.create(body);
+  // 🔹 Rejestracja
+  @Post('register')
+  register(@Body() body: { login: string; email: string }) {
+    return this.usersService.register(body.login, body.email);
+  }
+
+  // 🔹 Logowanie
+  @Post('login')
+  login(@Body() body: { login: string; password: string }) {
+    return this.usersService.login(body.login, body.password);
   }
 
   @Delete(':id')

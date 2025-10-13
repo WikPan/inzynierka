@@ -1,78 +1,43 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { loginUser } from "../api/users.ts";
 
 interface LoginProps {
   setIsLoggedIn: (val: boolean) => void;
 }
 
 export default function Login({ setIsLoggedIn }: LoginProps) {
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // 🔹 Tu możesz dodać połączenie z backendem (fetch do /login)
-    if (email === "admin@example.com" && password === "admin") {
+  const handleLogin = async () => {
+    try {
+      const data = await loginUser({ login, password });
+      alert(data.message);
       setIsLoggedIn(true);
-      alert("Zalogowano pomyślnie!");
       navigate("/");
-    } else {
-      alert("Nieprawidłowy login lub hasło.");
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
   return (
     <div style={{ padding: "2rem" }}>
       <h1>Logowanie</h1>
-
-      <form
-        onSubmit={handleLogin}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-          maxWidth: "300px",
-        }}
-      >
-        <label>
-          Email:
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", padding: "0.5rem" }}
-          />
-        </label>
-
-        <label>
-          Hasło:
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: "0.5rem" }}
-          />
-        </label>
-
-        <button
-          type="submit"
-          style={{
-            padding: "0.75rem",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            cursor: "pointer",
-            borderRadius: "4px",
-          }}
-        >
-          Zaloguj
-        </button>
-      </form>
+      <input
+        type="text"
+        placeholder="Login"
+        value={login}
+        onChange={(e) => setLogin(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="Hasło"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <button onClick={handleLogin}>Zaloguj</button>
     </div>
   );
 }
