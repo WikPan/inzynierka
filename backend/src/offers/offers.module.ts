@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Offer } from './offer.entity';
-import { OfferImage } from './offer-image.entity';
 import { OffersService } from './offers.service';
 import { OffersController } from './offers.controller';
+import { Offer } from './offer.entity';
+import { User } from '../users/users.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Offer, OfferImage])],
-  providers: [OffersService],
+  imports: [TypeOrmModule.forFeature([Offer, User])], // 👈 tu dodaliśmy User
   controllers: [OffersController],
+  providers: [OffersService],
 })
 export class OffersModule {}
