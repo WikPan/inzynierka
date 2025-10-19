@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { User } from '../users/users.entity';
 import { Review } from '../reviews/reviews.entity';
 import { OfferImage } from './offer-image.entity';
@@ -8,7 +15,7 @@ export class Offer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, user => user.offers, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.offers, { onDelete: 'CASCADE' })
   user: User;
 
   @Column()
@@ -26,12 +33,18 @@ export class Offer {
   @Column()
   localisation: string;
 
+  @Column('decimal', { precision: 10, scale: 6, nullable: true })
+  latitude: number;
+
+  @Column('decimal', { precision: 10, scale: 6, nullable: true })
+  longitude: number;
+
   @CreateDateColumn()
   createdAt: Date;
 
-  @OneToMany(() => OfferImage, img => img.offer, { cascade: true })
+  @OneToMany(() => OfferImage, (img) => img.offer, { cascade: true })
   images: OfferImage[];
 
-  @OneToMany(() => Review, review => review.offer)
+  @OneToMany(() => Review, (review) => review.offer)
   reviews: Review[];
 }
