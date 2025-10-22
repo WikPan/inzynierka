@@ -56,4 +56,13 @@ export class OffersService {
     await this.offersRepo.delete(id);
     return { deleted: true };
   }
+
+async findByUser(userId: string) {
+  return this.offersRepo.find({
+    where: { user: { id: userId } },
+    relations: ['user'],
+    order: { id: 'DESC' },
+  });
 }
+}
+

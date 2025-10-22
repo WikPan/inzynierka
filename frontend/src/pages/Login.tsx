@@ -11,16 +11,23 @@ export default function Login({ setIsLoggedIn }: LoginProps) {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    try {
-      const data = await loginUser({ login, password });
-      alert(data.message);
-      setIsLoggedIn(true);
-      navigate("/");
-    } catch (err: any) {
-      alert(err.message);
+const handleLogin = async () => {
+  try {
+    const data = await loginUser({ login, password });
+
+    // ✅ zapis tokena w localStorage
+    if (data.access_token) {
+      localStorage.setItem("token", data.access_token);
     }
-  };
+
+    alert("Zalogowano pomyślnie!");
+    setIsLoggedIn(true);
+    navigate("/");
+  } catch (err: any) {
+    alert("Błąd logowania: " + err.message);
+  }
+};
+
 
   return (
     <div style={{ padding: "2rem" }}>

@@ -41,16 +41,6 @@ export class User {
   @OneToMany(() => Message, msg => msg.toUser)
   receivedMessages: Message[];
 
-  // 🔐 automatyczne hashowanie
-  @BeforeInsert()
-  @BeforeUpdate()
-  async hashPassword() {
-    if (this.password) {
-      const saltRounds = 10;
-      this.password = await bcrypt.hash(this.password, saltRounds);
-    }
-  }
-
   // 🔑 metoda do sprawdzania hasła
   async comparePassword(plain: string): Promise<boolean> {
     return bcrypt.compare(plain, this.password);

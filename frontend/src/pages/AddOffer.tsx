@@ -2,74 +2,41 @@ import { useState } from "react";
 import axios from "axios";
 import Autosuggest from "react-autosuggest";
 
+type Suggestion = {
+  label: string;     // "Gliwice, Śląskie"
+  city: string;      // "Gliwice"
+  state: string;     // "Śląskie"
+  lat: number;
+  lon: number;
+};
+
 export default function AddOffer() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [prize, setPrize] = useState("");
   const [category, setCategory] = useState("");
-  const [localisation, setLocalisation] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  const [localisation, setLocalisation] = useState(""); // label do wyświetlenia
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [useLocation, setUseLocation] = useState(false);
 
-  // 🔹 Pobieranie propozycji miast/wiosek z OpenStreetMap Nominatim
-  const getSuggestions = async (value: string) => {
-    const query = value.trim();
-
-    if (query.length < 2) {
-      return [];
-    }
-
+  // --- AUTOCOMPLETE (proxy przez backend) ---
+  const getSuggestions = async (value: string): Promise<Suggestion[]> => {
+    const q = value.trim();
+    if (q.length < 2) return [];
     try {
-      const url = `https://nominatim.openstreetmap.org/search?countrycodes=pl&format=json&addressdetails=1&limit=20&featuretype=settlement&q=${encodeURIComponent(
-        query
-      )}`;
-
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent": "inzynierka-app/1.0 (https://localhost)",
-          "Accept-Language": "pl",
-          "Referer": "https://localhost",
-        },
-      });
-
-      const data = await response.json();
-      const input = query.toLowerCase();
-
-      const results = data
-        .filter((item: any) => {
-          const type = item.type;
-          return (
-            type === "city" ||
-            type === "town" ||
-            type === "village" ||
-            type === "hamlet" ||
-            type === "suburb"
-          );
-        })
-        .map((item: any) => {
-          const city =
-            item.address.city ||
-            item.address.town ||
-            item.address.village ||
-            item.address.suburb ||
-            item.address.hamlet;
-          const state = item.address.state || "";
-          return city ? { city, state } : null;
-        })
-        .filter((v: any): v is { city: string; state: string } => !!v)
-        // 🔹 tylko miasta zaczynające się od wpisanego tekstu
-        .filter((v) => v.city.toLowerCase().startsWith(input))
-        // 🔹 zamiana na string np. "Gliwice, Śląskie"
-        .map((v) => `${v.city}${v.state ? ", " + v.state : ""}`)
-        // 🔹 usunięcie duplikatów
-        .filter((v, i, arr) => arr.indexOf(v) === i)
-        // 🔹 maksymalnie 10 wyników
-        .slice(0, 10);
-
-      console.log("🔎 Wyniki filtrowane:", results);
-      return results;
-    } catch (error) {
-      console.error("Błąd pobierania danych z Nominatim:", error);
+      const res = await fetch(
+        `http://localhost:3000/geo/autocomplete?query=${encodeURIComponent(q)}`
+      );
+      if (!res.ok) return [];
+      const data: Suggestion[] = await res.json();
+      // dodatkowo ogranicz liczbę wyników na froncie (opcjonalnie)
+      return data.slice(0, 10);
+    } catch (e) {
+      console.error("❌ Błąd pobierania danych (geo/autocomplete):", e);
       return [];
     }
   };
@@ -81,13 +48,33 @@ export default function AddOffer() {
 
   const onSuggestionsClearRequested = () => setSuggestions([]);
 
+  const getSuggestionValue = (s: Suggestion) => s.label;
+
+  const renderSuggestion = (s: Suggestion) => (
+    <div style={{ padding: "6px 10px", cursor: "pointer" }}>{s.label}</div>
+  );
+
+  const onSuggestionSelected = (
+    _e: any,
+    { suggestion }: { suggestion: Suggestion }
+  ) => {
+    setLocalisation(suggestion.label);
+    setLatitude(suggestion.lat);
+    setLongitude(suggestion.lon);
+  };
+
   const inputProps = {
     placeholder: "Podaj miejscowość (np. Gliwice, Śląskie)",
     value: localisation,
-    onChange: (_: any, { newValue }: any) => setLocalisation(newValue),
+    onChange: (_: any, { newValue }: any) => {
+      setLocalisation(newValue);
+      // kiedy użytkownik edytuje ręcznie – wyczyść współrzędne
+      setLatitude(null);
+      setLongitude(null);
+    },
   };
 
-  // 🔹 Obsługa przycisku „Użyj mojej lokalizacji”
+  // --- Użyj mojej lokalizacji ---
   const handleUseMyLocation = async () => {
     if (!navigator.geolocation) {
       alert("Twoja przeglądarka nie wspiera geolokalizacji.");
@@ -97,31 +84,20 @@ export default function AddOffer() {
     setUseLocation(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const { latitude, longitude } = pos.coords;
+        const { latitude: lat, longitude: lon } = pos.coords;
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-            {
-              headers: {
-                "Accept-Language": "pl",
-                "User-Agent": "inzynierka-app/1.0",
-              },
-            }
+            `http://localhost:3000/geo/reverse?lat=${lat}&lon=${lon}`
           );
-          const data = await res.json();
+          if (!res.ok) throw new Error("Reverse geocoding failed");
+          const data: Suggestion = await res.json();
 
-          const city =
-            data.address.city ||
-            data.address.town ||
-            data.address.village ||
-            data.address.suburb ||
-            data.address.hamlet;
-          const state = data.address.state || "";
-
-          setLocalisation(`${city}${state ? ", " + state : ""}`);
+          setLocalisation(data.label);
+          setLatitude(data.lat);
+          setLongitude(data.lon);
         } catch (err) {
-          alert("Nie udało się pobrać lokalizacji.");
           console.error(err);
+          alert("Nie udało się pobrać lokalizacji.");
         } finally {
           setUseLocation(false);
         }
@@ -133,27 +109,41 @@ export default function AddOffer() {
     );
   };
 
-  // 🔹 Wysłanie formularza do backendu
+  // --- Submit ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(
-        "http://localhost:3000/offers",
-        {
-          title,
-          description,
-          prize: parseFloat(prize),
-          category,
-          localisation,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const body: any = {
+        title,
+        description,
+        prize: parseFloat(prize),
+        category,
+        localisation, // "Miasto, Województwo" – do wyświetlania
+      };
+
+      // Jeżeli mamy współrzędne – wyślij do backendu
+      if (latitude != null && longitude != null) {
+        body.latitude = latitude;
+        body.longitude = longitude;
+      }
+
+      const res = await axios.post("http://localhost:3000/offers", body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       console.log("✅ Oferta dodana:", res.data);
       alert("Oferta została pomyślnie dodana!");
+
+      // wyczyść formularz
+      setTitle("");
+      setDescription("");
+      setPrize("");
+      setCategory("");
+      setLocalisation("");
+      setLatitude(null);
+      setLongitude(null);
+      setSuggestions([]);
     } catch (err: any) {
       console.error("❌ Błąd dodawania oferty:", err);
       alert("Nie udało się dodać oferty.");
@@ -163,6 +153,7 @@ export default function AddOffer() {
   return (
     <div style={{ maxWidth: 500, margin: "50px auto" }}>
       <h2>Dodaj nową ofertę</h2>
+
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -170,17 +161,20 @@ export default function AddOffer() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+
         <textarea
           placeholder="Opis"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
         <input
           type="number"
           placeholder="Cena"
           value={prize}
           onChange={(e) => setPrize(e.target.value)}
         />
+
         <input
           type="text"
           placeholder="Kategoria"
@@ -193,25 +187,17 @@ export default function AddOffer() {
           suggestions={suggestions}
           onSuggestionsFetchRequested={onSuggestionsFetchRequested}
           onSuggestionsClearRequested={onSuggestionsClearRequested}
-          getSuggestionValue={(s: any) => s}
-          renderSuggestion={(s: any) => (
-            <div style={{ padding: "6px 10px", cursor: "pointer" }}>{s}</div>
-          )}
+          onSuggestionSelected={onSuggestionSelected}
+          getSuggestionValue={getSuggestionValue}
+          renderSuggestion={renderSuggestion}
           inputProps={inputProps}
         />
 
-        <button
-          type="button"
-          onClick={handleUseMyLocation}
-          disabled={useLocation}
-          style={{ marginTop: "10px" }}
-        >
+        <button type="button" onClick={handleUseMyLocation} disabled={useLocation}>
           {useLocation ? "Pobieranie..." : "Użyj mojej lokalizacji"}
         </button>
 
-        <button type="submit" style={{ marginTop: "10px" }}>
-          Dodaj ofertę
-        </button>
+        <button type="submit">Dodaj ofertę</button>
       </form>
     </div>
   );
