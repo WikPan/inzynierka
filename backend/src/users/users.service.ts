@@ -131,4 +131,15 @@ export class UsersService {
     user.password = await bcrypt.hash(newPassword, 10);
     return this.usersRepo.save(user);
   }
+      // 🔹 Umożliwia tworzenie użytkownika bezpośrednio z AuthService
+    async create(data: Partial<User>): Promise<User> {
+      const user = this.usersRepo.create(data);
+      return this.usersRepo.save(user);
+    }
+
+    // 🔹 Znajduje użytkownika po loginie (dla AuthService)
+    async findByLogin(login: string): Promise<User | null> {
+      return this.usersRepo.findOne({ where: { login } });
+    }
+
 }

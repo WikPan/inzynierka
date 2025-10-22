@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
@@ -68,6 +69,41 @@ export default function ProfilePage() {
     } catch (err) {
       setMessage("❌ Nie udało się zmienić adresu email");
       console.error(err);
+    }
+  };
+
+  // 🔹 Upload avatara
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await axios.post(
+        "http://localhost:3000/users/upload-avatar",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setUser((prev) =>
+        prev ? { ...prev, avatarUrl: res.data.avatarUrl } : prev
+      );
+      setMessage("✅ Avatar został zaktualizowany!");
+    } catch (err) {
+      console.error("❌ Błąd uploadu avatara:", err);
+      setMessage("❌ Nie udało się wysłać avatara.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -117,8 +153,35 @@ export default function ProfilePage() {
                   height: "120px",
                   borderRadius: "50%",
                   objectFit: "cover",
+                  border: "2px solid #ddd",
+                  marginBottom: "10px",
                 }}
               />
+
+              <div>
+                <label
+                  htmlFor="avatarUpload"
+                  style={{
+                    display: "inline-block",
+                    backgroundColor: "#007bff",
+                    color: "white",
+                    padding: "8px 16px",
+                    borderRadius: "5px",
+                    cursor: "pointer",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {uploading ? "Wysyłanie..." : "Zmień zdjęcie"}
+                </label>
+                <input
+                  id="avatarUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  style={{ display: "none" }}
+                />
+              </div>
+
               <h3>{user.username}</h3>
             </div>
 
@@ -155,6 +218,7 @@ export default function ProfilePage() {
                 style={{
                   marginTop: "15px",
                   color: message.includes("✅") ? "green" : "red",
+                  textAlign: "center",
                 }}
               >
                 {message}

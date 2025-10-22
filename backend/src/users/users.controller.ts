@@ -8,10 +8,16 @@ import {
   Patch,
   Request,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from './users.entity';
 import { AuthGuard } from '../auth/auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as fs from 'fs';
+import cloudinary from '../cloudinary/cloudinary.provider';
 
 @Controller('users')
 export class UsersController {
@@ -21,13 +27,14 @@ export class UsersController {
   getAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
+
   // 🔹 Profil użytkownika
   @UseGuards(AuthGuard)
   @Get('me')
   async getMe(@Request() req) {
     return this.usersService.findById(req.user.id);
   }
-  
+
   @Get(':id')
   getOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -50,8 +57,6 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-
-
   // 🔹 Zmiana e-maila
   @UseGuards(AuthGuard)
   @Patch('change-email')
@@ -72,4 +77,52 @@ export class UsersController {
       body.newPassword,
     );
   }
+
+ // 🔹 Upload avatara do Cloudinary
+@UseGuards(AuthGuard)
+@Post('upload-avatar')
+@UseInterceptors(FileInterceptor('file'))
+async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Request() req) {
+  try {
+    if (!file) {
+      throw new BadRequestException('Brak pliku do przesłania');
+    }
+
+    const username = req.user.username || 'unknown_user';
+    const userId = req.user.id;
+    const uploadPath = `inzynierka/${username}/avatar`;
+
+    // 🔥 Kluczowa zmiana — upload z bufora zamiast pliku
+    const uploadResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: uploadPath,
+          public_id: 'avatar',
+          overwrite: true,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        },
+      );
+      stream.end(file.buffer);
+    });
+
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new BadRequestException(`Użytkownik o id ${userId} nie istnieje`);
+
+    user.avatarUrl = (uploadResult as any).secure_url;
+    await this.usersService['usersRepo'].save(user);
+
+    return {
+      message: '✅ Avatar uploaded successfully',
+      avatarUrl: (uploadResult as any).secure_url,
+      cloudFolder: uploadPath,
+    };
+  } catch (error) {
+    console.error('❌ Avatar upload error:', error);
+    throw new BadRequestException(error.message || 'Upload failed');
+  }
+}
+
 }
