@@ -3,9 +3,9 @@ import axios from "axios";
 import Autosuggest from "react-autosuggest";
 
 type Suggestion = {
-  label: string;     // "Gliwice, Śląskie"
-  city: string;      // "Gliwice"
-  state: string;     // "Śląskie"
+  label: string;
+  city: string;
+  state: string;
   lat: number;
   lon: number;
 };
@@ -15,15 +15,18 @@ export default function AddOffer() {
   const [description, setDescription] = useState("");
   const [prize, setPrize] = useState("");
   const [category, setCategory] = useState("");
-
-  const [localisation, setLocalisation] = useState(""); // label do wyświetlenia
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [localisation, setLocalisation] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [useLocation, setUseLocation] = useState(false);
+  const token = localStorage.getItem("token");
 
-  // --- AUTOCOMPLETE (proxy przez backend) ---
+  // ------------------------
+  // AUTOCOMPLETE
+  // ------------------------
   const getSuggestions = async (value: string): Promise<Suggestion[]> => {
     const q = value.trim();
     if (q.length < 2) return [];
@@ -33,7 +36,6 @@ export default function AddOffer() {
       );
       if (!res.ok) return [];
       const data: Suggestion[] = await res.json();
-      // dodatkowo ogranicz liczbę wyników na froncie (opcjonalnie)
       return data.slice(0, 10);
     } catch (e) {
       console.error("❌ Błąd pobierania danych (geo/autocomplete):", e);
@@ -68,13 +70,14 @@ export default function AddOffer() {
     value: localisation,
     onChange: (_: any, { newValue }: any) => {
       setLocalisation(newValue);
-      // kiedy użytkownik edytuje ręcznie – wyczyść współrzędne
       setLatitude(null);
       setLongitude(null);
     },
   };
 
-  // --- Użyj mojej lokalizacji ---
+  // ------------------------
+  // GEOLOKALIZACJA
+  // ------------------------
   const handleUseMyLocation = async () => {
     if (!navigator.geolocation) {
       alert("Twoja przeglądarka nie wspiera geolokalizacji.");
@@ -109,33 +112,76 @@ export default function AddOffer() {
     );
   };
 
-  // --- Submit ---
+  // ------------------------
+  // OBSŁUGA ZDJĘĆ
+  // ------------------------
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length + selectedImages.length > 3) {
+      alert("Możesz dodać maksymalnie 3 zdjęcia!");
+      return;
+    }
+
+    const newFiles = [...selectedImages, ...files].slice(0, 3);
+    setSelectedImages(newFiles);
+    setPreviewUrls(newFiles.map((f) => URL.createObjectURL(f)));
+  };
+
+  const removeImage = (index: number) => {
+    const updatedImages = selectedImages.filter((_, i) => i !== index);
+    const updatedPreviews = previewUrls.filter((_, i) => i !== index);
+    setSelectedImages(updatedImages);
+    setPreviewUrls(updatedPreviews);
+  };
+
+  // ------------------------
+  // SUBMIT
+  // ------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Brak tokena (zaloguj się ponownie)");
+
+      // 1️⃣ Stwórz ofertę
       const body: any = {
         title,
         description,
         prize: parseFloat(prize),
         category,
-        localisation, // "Miasto, Województwo" – do wyświetlania
+        localisation,
       };
-
-      // Jeżeli mamy współrzędne – wyślij do backendu
       if (latitude != null && longitude != null) {
         body.latitude = latitude;
         body.longitude = longitude;
       }
 
-      const res = await axios.post("http://localhost:3000/offers", body, {
+      const offerRes = await axios.post("http://localhost:3000/offers", body, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("✅ Oferta dodana:", res.data);
-      alert("Oferta została pomyślnie dodana!");
+      const offerId = offerRes.data.id;
+      console.log("✅ Oferta utworzona:", offerRes.data);
 
-      // wyczyść formularz
+      // 2️⃣ Jeśli wybrano zdjęcia — wyślij je
+      if (selectedImages.length > 0) {
+        const formData = new FormData();
+        selectedImages.forEach((file) => formData.append("files", file));
+
+        await axios.post(
+          `http://localhost:3000/offers/${offerId}/upload-images`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        console.log("✅ Zdjęcia przesłane do oferty");
+      }
+
+      alert("✅ Oferta dodana pomyślnie!");
+      // reset formularza
       setTitle("");
       setDescription("");
       setPrize("");
@@ -143,13 +189,17 @@ export default function AddOffer() {
       setLocalisation("");
       setLatitude(null);
       setLongitude(null);
-      setSuggestions([]);
+      setSelectedImages([]);
+      setPreviewUrls([]);
     } catch (err: any) {
       console.error("❌ Błąd dodawania oferty:", err);
       alert("Nie udało się dodać oferty.");
     }
   };
 
+  // ------------------------
+  // RENDER
+  // ------------------------
   return (
     <div style={{ maxWidth: 500, margin: "50px auto" }}>
       <h2>Dodaj nową ofertę</h2>
@@ -160,12 +210,14 @@ export default function AddOffer() {
           placeholder="Tytuł"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          required
         />
 
         <textarea
           placeholder="Opis"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          required
         />
 
         <input
@@ -173,6 +225,7 @@ export default function AddOffer() {
           placeholder="Cena"
           value={prize}
           onChange={(e) => setPrize(e.target.value)}
+          required
         />
 
         <input
@@ -180,9 +233,68 @@ export default function AddOffer() {
           placeholder="Kategoria"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
+          required
         />
 
-        <label>Lokalizacja:</label>
+        {/* 🔹 Upload zdjęć */}
+        <label style={{ marginTop: "10px", display: "block" }}>
+          Zdjęcia (max 3):
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageChange}
+          style={{ marginTop: "5px" }}
+        />
+
+        {/* 🔹 Podgląd zdjęć */}
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            marginTop: "10px",
+            flexWrap: "wrap",
+          }}
+        >
+          {previewUrls.map((url, i) => (
+            <div key={i} style={{ position: "relative" }}>
+              <img
+                src={url}
+                alt={`preview-${i}`}
+                style={{
+                  width: "100px",
+                  height: "100px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                  border: "1px solid #ccc",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                style={{
+                  position: "absolute",
+                  top: "-5px",
+                  right: "-5px",
+                  background: "red",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "20px",
+                  height: "20px",
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <label style={{ marginTop: "15px", display: "block" }}>
+          Lokalizacja:
+        </label>
         <Autosuggest
           suggestions={suggestions}
           onSuggestionsFetchRequested={onSuggestionsFetchRequested}
@@ -193,11 +305,30 @@ export default function AddOffer() {
           inputProps={inputProps}
         />
 
-        <button type="button" onClick={handleUseMyLocation} disabled={useLocation}>
+        <button
+          type="button"
+          onClick={handleUseMyLocation}
+          disabled={useLocation}
+          style={{ marginTop: "10px" }}
+        >
           {useLocation ? "Pobieranie..." : "Użyj mojej lokalizacji"}
         </button>
 
-        <button type="submit">Dodaj ofertę</button>
+        <button
+          type="submit"
+          style={{
+            display: "block",
+            marginTop: "20px",
+            backgroundColor: "#007bff",
+            color: "white",
+            padding: "10px 20px",
+            borderRadius: "5px",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Dodaj ofertę
+        </button>
       </form>
     </div>
   );
