@@ -11,6 +11,8 @@ type Offer = {
   localisation: string;
   prize: number;
   images?: { url: string }[];
+  avgRounded?: number | null; // ⭐ średnia
+  ratingsCount?: number; // 💬 liczba opinii
 };
 
 export default function Home() {
@@ -21,8 +23,29 @@ export default function Home() {
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/offers");
-        setOffers(res.data);
+        // 🔹 1. Pobieramy wszystkie oferty
+        const { data } = await axios.get("http://localhost:3000/offers");
+
+        // 🔹 2. Dla każdej oferty pobieramy statystyki ocen
+        const offersWithStats = await Promise.all(
+          data.map(async (offer: Offer) => {
+            try {
+              const { data: stats } = await axios.get(
+                `http://localhost:3000/reviews/offer/${offer.id}/stats`
+              );
+              return {
+                ...offer,
+                avgRounded: stats.avgRounded,
+                ratingsCount: stats.ratingsCount,
+              };
+            } catch {
+              // jeśli brak recenzji lub błąd — wpisz puste
+              return { ...offer, avgRounded: null, ratingsCount: 0 };
+            }
+          })
+        );
+
+        setOffers(offersWithStats);
       } catch (err) {
         console.error("❌ Błąd pobierania ofert:", err);
       } finally {
@@ -61,17 +84,18 @@ export default function Home() {
             localisation={offer.localisation}
             price={offer.prize}
             category={offer.category}
-            images={
+           images={
               offer.images && offer.images.length > 0
                 ? offer.images.map((img) => img.url)
-                : ["https://via.placeholder.com/400x300?text=Brak+zdjęcia"]
+                : ["/logo.png"] // 👈 lokalne logo z public/
             }
+            rating={offer.avgRounded ?? undefined}
+            ratingsCount={offer.ratingsCount ?? 0}
             onClick={() => setSelectedOffer(offer)}
           />
         ))}
       </div>
 
-      {/* 🔹 Modal (pełny widok oferty) */}
       {selectedOffer && (
         <OfferModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
       )}

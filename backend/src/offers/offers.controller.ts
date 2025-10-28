@@ -124,4 +124,5 @@ export class OffersController {
       images: uploadedImages.map((img) => img.url),
     };
   }
+
 }

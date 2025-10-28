@@ -16,8 +16,6 @@ export class AuthService {
     const hashed = await bcrypt.hash(password, 10);
     const user = await this.usersService.create({ login, email, password: hashed });
 
-    // Możesz tu dodać wysyłkę maila z hasłem
-
     return { message: 'User registered successfully', login, password };
   }
 

@@ -1,13 +1,14 @@
-import { Controller, Get, Post, Param, Delete, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Delete, Body, UseGuards, Req } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
-import { Review } from './reviews.entity';
+import { CreateReviewDto } from './create-review.dto';
+import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
   @Get()
-  getAll(): Promise<Review[]> {
+  getAll() {
     return this.reviewsService.findAll();
   }
 
@@ -16,11 +17,30 @@ export class ReviewsController {
     return this.reviewsService.findOne(id);
   }
 
-  @Post()
-  create(@Body() body: Partial<Review>) {
-    return this.reviewsService.create(body);
+  @Get('offer/:offerId')
+  getForOffer(@Param('offerId') offerId: string) {
+    return this.reviewsService.findByOffer(offerId);
   }
 
+  @Get('offer/:offerId/stats')
+  async getStats(@Param('offerId') offerId: string) {
+    const s = await this.reviewsService.statsForOffer(offerId);
+    return {
+      sum: s.sum,
+      avg: s.avg,
+      avgRounded: s.avgRounded,
+      ratingsCount: s.ratingsCount,
+      reportsCount: s.reportsCount,
+    };
+  }
+  
+  @UseGuards(AuthGuard)
+  @Post()
+  create(@Req() req: any, @Body() body: CreateReviewDto) {
+    return this.reviewsService.create(req.user.id, body);
+  }
+
+  @UseGuards(AuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.reviewsService.remove(id);

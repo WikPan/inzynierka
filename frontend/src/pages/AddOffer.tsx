@@ -22,11 +22,13 @@ export default function AddOffer() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [useLocation, setUseLocation] = useState(false);
+  const [titleError, setTitleError] = useState(false);
+  const [descError, setDescError] = useState(false);
   const token = localStorage.getItem("token");
 
-  // ------------------------
-  // AUTOCOMPLETE
-  // ------------------------
+  const MAX_TITLE = 60;
+  const MAX_DESC = 500;
+
   const getSuggestions = async (value: string): Promise<Suggestion[]> => {
     const q = value.trim();
     if (q.length < 2) return [];
@@ -37,8 +39,7 @@ export default function AddOffer() {
       if (!res.ok) return [];
       const data: Suggestion[] = await res.json();
       return data.slice(0, 10);
-    } catch (e) {
-      console.error("❌ Błąd pobierania danych (geo/autocomplete):", e);
+    } catch {
       return [];
     }
   };
@@ -49,12 +50,6 @@ export default function AddOffer() {
   };
 
   const onSuggestionsClearRequested = () => setSuggestions([]);
-
-  const getSuggestionValue = (s: Suggestion) => s.label;
-
-  const renderSuggestion = (s: Suggestion) => (
-    <div style={{ padding: "6px 10px", cursor: "pointer" }}>{s.label}</div>
-  );
 
   const onSuggestionSelected = (
     _e: any,
@@ -68,21 +63,11 @@ export default function AddOffer() {
   const inputProps = {
     placeholder: "Podaj miejscowość (np. Gliwice, Śląskie)",
     value: localisation,
-    onChange: (_: any, { newValue }: any) => {
-      setLocalisation(newValue);
-      setLatitude(null);
-      setLongitude(null);
-    },
+    onChange: (_: any, { newValue }: any) => setLocalisation(newValue),
   };
 
-  // ------------------------
-  // GEOLOKALIZACJA
-  // ------------------------
   const handleUseMyLocation = async () => {
-    if (!navigator.geolocation) {
-      alert("Twoja przeglądarka nie wspiera geolokalizacji.");
-      return;
-    }
+    if (!navigator.geolocation) return alert("Brak wsparcia geolokalizacji.");
 
     setUseLocation(true);
     navigator.geolocation.getCurrentPosition(
@@ -92,81 +77,65 @@ export default function AddOffer() {
           const res = await fetch(
             `http://localhost:3000/geo/reverse?lat=${lat}&lon=${lon}`
           );
-          if (!res.ok) throw new Error("Reverse geocoding failed");
           const data: Suggestion = await res.json();
-
           setLocalisation(data.label);
           setLatitude(data.lat);
           setLongitude(data.lon);
-        } catch (err) {
-          console.error(err);
+        } catch {
           alert("Nie udało się pobrać lokalizacji.");
         } finally {
           setUseLocation(false);
         }
       },
       (err) => {
-        alert("Nie udało się pobrać lokalizacji: " + err.message);
+        alert("Błąd geolokalizacji: " + err.message);
         setUseLocation(false);
       }
     );
   };
 
-  // ------------------------
-  // OBSŁUGA ZDJĘĆ
-  // ------------------------
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + selectedImages.length > 3) {
-      alert("Możesz dodać maksymalnie 3 zdjęcia!");
+      alert("Maksymalnie 3 zdjęcia!");
       return;
     }
-
     const newFiles = [...selectedImages, ...files].slice(0, 3);
     setSelectedImages(newFiles);
     setPreviewUrls(newFiles.map((f) => URL.createObjectURL(f)));
   };
 
-  const removeImage = (index: number) => {
-    const updatedImages = selectedImages.filter((_, i) => i !== index);
-    const updatedPreviews = previewUrls.filter((_, i) => i !== index);
-    setSelectedImages(updatedImages);
-    setPreviewUrls(updatedPreviews);
+  const removeImage = (i: number) => {
+    setSelectedImages(selectedImages.filter((_, idx) => idx !== i));
+    setPreviewUrls(previewUrls.filter((_, idx) => idx !== i));
   };
 
-  // ------------------------
-  // SUBMIT
-  // ------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (title.length > MAX_TITLE) return setTitleError(true);
+    if (description.length > MAX_DESC) return setDescError(true);
+
     try {
       if (!token) throw new Error("Brak tokena (zaloguj się ponownie)");
 
-      // 1️⃣ Stwórz ofertę
       const body: any = {
         title,
         description,
         prize: parseFloat(prize),
         category,
         localisation,
+        latitude,
+        longitude,
       };
-      if (latitude != null && longitude != null) {
-        body.latitude = latitude;
-        body.longitude = longitude;
-      }
 
       const offerRes = await axios.post("http://localhost:3000/offers", body, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const offerId = offerRes.data.id;
-      console.log("✅ Oferta utworzona:", offerRes.data);
-
-      // 2️⃣ Jeśli wybrano zdjęcia — wyślij je
       if (selectedImages.length > 0) {
         const formData = new FormData();
-        selectedImages.forEach((file) => formData.append("files", file));
-
+        selectedImages.forEach((f) => formData.append("files", f));
         await axios.post(
           `http://localhost:3000/offers/${offerId}/upload-images`,
           formData,
@@ -177,157 +146,383 @@ export default function AddOffer() {
             },
           }
         );
-        console.log("✅ Zdjęcia przesłane do oferty");
       }
 
       alert("✅ Oferta dodana pomyślnie!");
-      // reset formularza
       setTitle("");
       setDescription("");
       setPrize("");
       setCategory("");
       setLocalisation("");
-      setLatitude(null);
-      setLongitude(null);
       setSelectedImages([]);
       setPreviewUrls([]);
-    } catch (err: any) {
-      console.error("❌ Błąd dodawania oferty:", err);
-      alert("Nie udało się dodać oferty.");
+    } catch (err) {
+      console.error(err);
+      alert("❌ Nie udało się dodać oferty.");
     }
   };
 
-  // ------------------------
-  // RENDER
-  // ------------------------
   return (
-    <div style={{ maxWidth: 500, margin: "50px auto" }}>
-      <h2>Dodaj nową ofertę</h2>
+    <div
+      style={{
+        maxWidth: "650px",
+        margin: "60px auto",
+        backgroundColor: "#fff",
+        padding: "40px 50px",
+        borderRadius: "20px",
+        boxShadow: "0 8px 25px rgba(0,0,0,0.08)",
+      }}
+    >
+      <h2
+        style={{
+          textAlign: "center",
+          color: "#007bff",
+          fontWeight: "bold",
+          marginBottom: "25px",
+          fontSize: "1.8rem",
+        }}
+      >
+        ✨ Dodaj nową ofertę
+      </h2>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Tytuł"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: "18px" }}
+      >
+        {/* Tytuł */}
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Tytuł oferty"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setTitleError(false);
+            }}
+            maxLength={MAX_TITLE}
+            required
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #ccc",
+              fontSize: "1rem",
+              transition: "border-color 0.2s",
+            }}
+          />
+          <small style={{ color: title.length >= MAX_TITLE ? "red" : "#666" }}>
+            {title.length}/{MAX_TITLE}
+          </small>
+          {titleError && (
+            <div style={{ color: "red", fontSize: "0.9rem" }}>
+              Przekroczono maksymalną długość tytułu.
+            </div>
+          )}
+        </div>
 
-        <textarea
-          placeholder="Opis"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
+        {/* Opis */}
+        <div style={{ position: "relative" }}>
+          <textarea
+            placeholder="Opis oferty..."
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setDescError(false);
+            }}
+            maxLength={MAX_DESC}
+            required
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid #ccc",
+              fontSize: "1rem",
+              resize: "none",
+              minHeight: "100px",
+            }}
+          />
+          <small style={{ color: description.length >= MAX_DESC ? "red" : "#666" }}>
+            {description.length}/{MAX_DESC}
+          </small>
+          {descError && (
+            <div style={{ color: "red", fontSize: "0.9rem" }}>
+              Przekroczono maksymalną długość opisu.
+            </div>
+          )}
+        </div>
 
-        <input
-          type="number"
-          placeholder="Cena"
-          value={prize}
-          onChange={(e) => setPrize(e.target.value)}
-          required
-        />
+{/* Cena */}
+<div style={{ position: "relative" }}>
+  <input
+    type="text" // <-- zmiana na text, ale walidujemy tylko cyfry!
+    placeholder="Cena (zł)"
+    value={prize}
+    onChange={(e) => {
+      const val = e.target.value;
+      // Pozwalamy tylko cyfry i ewentualnie kropkę
+      if (/^[0-9]*([.,][0-9]*)?$/.test(val) || val === "") {
+        setPrize(val.replace(",", ".")); // zamieniamy przecinek na kropkę
+      }
+    }}
+    required
+    inputMode="decimal" // pokazuje klawiaturę numeryczną na telefonach
+    style={{
+      width: "100%",
+      padding: "12px",
+      borderRadius: "10px",
+      border: "1px solid #ccc",
+      fontSize: "1rem",
+      outline: "none",
+      transition: "border-color 0.2s",
+    }}
+  />
+  <small style={{ color: "#555", marginTop: "4px", display: "block" }}>
+    💡 Ustawienie ceny na <b>0 zł</b> oznacza, że oferta jest{" "}
+    <b>bezpłatna</b>.
+  </small>
+</div>
 
-        <input
-          type="text"
-          placeholder="Kategoria"
+
+        {/* Kategoria */}
+        <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           required
-        />
-
-        {/* 🔹 Upload zdjęć */}
-        <label style={{ marginTop: "10px", display: "block" }}>
-          Zdjęcia (max 3):
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleImageChange}
-          style={{ marginTop: "5px" }}
-        />
-
-        {/* 🔹 Podgląd zdjęć */}
-        <div
           style={{
-            display: "flex",
-            gap: "10px",
-            marginTop: "10px",
-            flexWrap: "wrap",
+            width: "100%",
+            padding: "12px",
+            borderRadius: "10px",
+            border: "1px solid #ccc",
+            backgroundColor: "#f9f9f9",
+            fontSize: "1rem",
           }}
         >
-          {previewUrls.map((url, i) => (
-            <div key={i} style={{ position: "relative" }}>
-              <img
-                src={url}
-                alt={`preview-${i}`}
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  objectFit: "cover",
-                  borderRadius: "8px",
+          <option value="">Wybierz kategorię</option>
+          <option value="Pomoc">Pomoc</option>
+          <option value="Kuchnia">Kuchnia</option>
+          <option value="Ogród">Ogród</option>
+          <option value="Prace dorywcze">Prace dorywcze</option>
+          <option value="Transport">Transport</option>
+          <option value="Inne">Inne</option>
+        </select>
+
+   {/* 📸 Zdjęcia */}
+<div
+  style={{
+    backgroundColor: "#f9fafc",
+    padding: "16px",
+    borderRadius: "12px",
+    border: "1px solid #e0e0e0",
+  }}
+>
+  <label
+    style={{
+      fontWeight: 600,
+      display: "block",
+      marginBottom: "10px",
+      color: "#333",
+    }}
+  >
+    📸 Zdjęcia (max 3)
+  </label>
+
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+    }}
+  >
+    <span style={{ color: "#666", fontSize: "0.9rem" }}>
+      {selectedImages.length > 0
+        ? `${selectedImages.length} wybrane`
+        : "Nie wybrano plików"}
+    </span>
+
+    <label
+      htmlFor="imageUpload"
+      style={{
+        backgroundColor: "#007bff",
+        color: "white",
+        padding: "8px 16px",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "0.95rem",
+        fontWeight: 500,
+        transition: "background-color 0.2s",
+      }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.backgroundColor = "#0056b3")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.backgroundColor = "#007bff")
+      }
+    >
+      Wybierz zdjęcia
+    </label>
+    <input
+      id="imageUpload"
+      type="file"
+      accept="image/*"
+      multiple
+      onChange={handleImageChange}
+      style={{ display: "none" }}
+    />
+  </div>
+
+  {/* Podglądy zdjęć */}
+  {previewUrls.length > 0 && (
+    <div
+      style={{
+        display: "flex",
+        gap: "10px",
+        marginTop: "12px",
+        flexWrap: "wrap",
+      }}
+    >
+      {previewUrls.map((url, i) => (
+        <div key={i} style={{ position: "relative" }}>
+          <img
+            src={url}
+            alt={`preview-${i}`}
+            style={{
+              width: "100px",
+              height: "100px",
+              objectFit: "cover",
+              borderRadius: "10px",
+              border: "1px solid #ccc",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => removeImage(i)}
+            style={{
+              position: "absolute",
+              top: "-5px",
+              right: "-5px",
+              background: "#ff4444",
+              color: "white",
+              border: "none",
+              borderRadius: "50%",
+              width: "22px",
+              height: "22px",
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+
+        {/* 📍 Lokalizacja */}
+        <div
+          style={{
+            backgroundColor: "#f9fafc",
+            padding: "16px",
+            borderRadius: "12px",
+            border: "1px solid #e0e0e0",
+          }}
+        >
+          <label
+            style={{
+              fontWeight: 600,
+              display: "block",
+              marginBottom: "8px",
+              color: "#333",
+            }}
+          >
+            📍 Lokalizacja
+          </label>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <Autosuggest
+              suggestions={suggestions}
+              onSuggestionsFetchRequested={onSuggestionsFetchRequested}
+              onSuggestionsClearRequested={onSuggestionsClearRequested}
+              onSuggestionSelected={onSuggestionSelected}
+              getSuggestionValue={(s) => s.label}
+              renderSuggestion={(s) => (
+                <div
+                  style={{
+                    padding: "8px 10px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee",
+                  }}
+                >
+                  {s.label}
+                </div>
+              )}
+              inputProps={{
+                placeholder: "Podaj miejscowość (np. Gliwice, Śląskie)",
+                value: localisation,
+                onChange: (_: any, { newValue }: any) =>
+                  setLocalisation(newValue),
+                style: {
+                  padding: "12px",
+                  borderRadius: "10px",
                   border: "1px solid #ccc",
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(i)}
-                style={{
-                  position: "absolute",
-                  top: "-5px",
-                  right: "-5px",
-                  background: "red",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "50%",
-                  width: "20px",
-                  height: "20px",
-                  cursor: "pointer",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
+                  fontSize: "1rem",
+                  width: "100%",
+                },
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={handleUseMyLocation}
+              disabled={useLocation}
+              style={{
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "10px",
+                padding: "10px 16px",
+                fontSize: "0.95rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "background-color 0.2s",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#0056b3")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#007bff")
+              }
+            >
+              {useLocation ? "⏳ Pobieranie..." : "📌 Użyj mojej lokalizacji"}
+            </button>
+          </div>
         </div>
 
-        <label style={{ marginTop: "15px", display: "block" }}>
-          Lokalizacja:
-        </label>
-        <Autosuggest
-          suggestions={suggestions}
-          onSuggestionsFetchRequested={onSuggestionsFetchRequested}
-          onSuggestionsClearRequested={onSuggestionsClearRequested}
-          onSuggestionSelected={onSuggestionSelected}
-          getSuggestionValue={getSuggestionValue}
-          renderSuggestion={renderSuggestion}
-          inputProps={inputProps}
-        />
-
-        <button
-          type="button"
-          onClick={handleUseMyLocation}
-          disabled={useLocation}
-          style={{ marginTop: "10px" }}
-        >
-          {useLocation ? "Pobieranie..." : "Użyj mojej lokalizacji"}
-        </button>
-
+        {/* 🟦 Przycisk końcowy */}
         <button
           type="submit"
           style={{
-            display: "block",
-            marginTop: "20px",
             backgroundColor: "#007bff",
-            color: "white",
-            padding: "10px 20px",
-            borderRadius: "5px",
+            color: "#fff",
             border: "none",
+            borderRadius: "10px",
+            padding: "14px",
+            fontSize: "1.1rem",
+            fontWeight: "bold",
             cursor: "pointer",
+            marginTop: "10px",
+            transition: "background-color 0.25s",
           }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.backgroundColor = "#0056b3")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.backgroundColor = "#007bff")
+          }
         >
-          Dodaj ofertę
+          ➕ Dodaj ofertę
         </button>
       </form>
     </div>

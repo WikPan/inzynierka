@@ -1,13 +1,15 @@
 import { useState } from "react";
+import logoPlaceholder from "../assets/logo.png"; // 👈 nasze logo jako domyślny obrazek
 
 type OfferCardProps = {
   id: string;
   title: string;
   localisation: string;
-  price: number;
+  price: number | string;
   category: string;
   images: string[];
-  rating?: number; // na przyszłość
+  rating?: number;
+  ratingsCount?: number;
   onClick?: () => void;
 };
 
@@ -19,6 +21,7 @@ export default function OfferCard({
   category,
   images,
   rating,
+  ratingsCount,
   onClick,
 }: OfferCardProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -34,6 +37,14 @@ export default function OfferCard({
       prev === 0 ? images.length - 1 : prev - 1
     );
   };
+
+  // 🔹 Ujednolicenie typu ceny (string → number)
+  const numericPrice =
+    typeof price === "string" ? parseFloat(price) : price;
+
+  // 🔹 Ustal źródło obrazka (jeśli brak, użyj logo)
+  const hasImages = images && images.length > 0;
+  const displayImage = hasImages ? images[currentIndex] : logoPlaceholder;
 
   return (
     <div
@@ -62,20 +73,21 @@ export default function OfferCard({
           backgroundColor: "#f0f0f0",
         }}
       >
-        {images.length > 0 && (
-          <img
-            src={images[currentIndex]}
-            alt={title}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
-        )}
+        <img
+          src={displayImage}
+          alt={title}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: hasImages ? "cover" : "contain",
+            backgroundColor: hasImages ? "#f0f0f0" : "#fff",
+            padding: hasImages ? "0" : "20px",
+            opacity: hasImages ? 1 : 0.85,
+          }}
+        />
 
-        {/* Strzałki */}
-        {images.length > 1 && (
+        {/* Strzałki tylko jeśli więcej niż 1 zdjęcie */}
+        {hasImages && images.length > 1 && (
           <>
             <button
               onClick={prevImage}
@@ -163,6 +175,7 @@ export default function OfferCard({
           📍 {localisation}
         </p>
 
+        {/* ⭐ Ocena + liczba recenzji */}
         <div
           style={{
             display: "flex",
@@ -171,12 +184,47 @@ export default function OfferCard({
             marginTop: "6px",
           }}
         >
-          <span style={{ color: "#999", fontSize: "0.85rem" }}>
-            ⭐ {rating ? rating.toFixed(1) : "—"}
-          </span>
-          <strong style={{ color: "#007bff", fontSize: "1rem" }}>
-            {price} zł
-          </strong>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ color: "#ffa500", fontSize: "0.95rem" }}>
+              ⭐ {rating ? rating.toFixed(1) : "—"}
+            </span>
+            {ratingsCount !== undefined && ratingsCount > 0 && (
+              <span
+                style={{
+                  color: "#999",
+                  fontSize: "0.8rem",
+                }}
+              >
+                ({ratingsCount})
+              </span>
+            )}
+          </div>
+
+          {/* 💰 Cena lub "Bezpłatnie" */}
+          {numericPrice === 0 ? (
+            <strong
+              style={{
+                color: "#2e8b57",
+                fontSize: "1rem",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              🤝 Bezpłatnie
+            </strong>
+          ) : (
+            <strong
+              style={{
+                color: "#007bff",
+                fontSize: "1rem",
+                fontWeight: 600,
+              }}
+            >
+              {numericPrice} zł
+            </strong>
+          )}
         </div>
       </div>
     </div>

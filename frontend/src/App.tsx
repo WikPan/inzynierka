@@ -7,6 +7,7 @@ import AddOffer from "./pages/AddOffer";
 import ProfilePage from "./pages/ProfilePage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import { useState } from "react";
+import ReviewPage from "./pages/ReviewPage";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -18,7 +19,8 @@ export default function App() {
       <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
 
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home />} /> 
+        <Route path="/reviews/:offerId" element={<ReviewPage />} />
         <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/register" element={<Register />} />
 

@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 type OfferModalProps = {
   offer: {
@@ -13,10 +16,24 @@ type OfferModalProps = {
 };
 
 export default function OfferModal({ offer, onClose }: OfferModalProps) {
+  const [stats, setStats] = useState<{ avgRounded: number | null; ratingsCount: number; reportsCount: number }>({
+    avgRounded: null,
+    ratingsCount: 0,
+    reportsCount: 0,
+  });
+  const navigate = useNavigate();
+
   const images =
     offer.images && offer.images.length > 0
       ? offer.images.map((img) => img.url)
       : ["https://via.placeholder.com/600x400?text=Brak+zdjęć"];
+
+  useEffect(() => {
+    axios
+      .get(`http://localhost:3000/reviews/offer/${offer.id}/stats`)
+      .then((res) => setStats(res.data))
+      .catch((err) => console.error("Błąd pobierania statystyk:", err));
+  }, [offer.id]);
 
   return (
     <div
@@ -32,7 +49,7 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
         alignItems: "center",
         zIndex: 1000,
       }}
-      onClick={onClose} // kliknięcie tła zamyka
+      onClick={onClose}
     >
       <div
         style={{
@@ -45,9 +62,9 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
           overflowY: "auto",
           maxHeight: "90vh",
         }}
-        onClick={(e) => e.stopPropagation()} // zapobiega zamknięciu przy kliknięciu w treść
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* 🔹 Galeria */}
+        {/* 🖼️ Galeria */}
         <div
           style={{
             display: "flex",
@@ -71,38 +88,23 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
           ))}
         </div>
 
-        {/* 🔹 Treść */}
-        <h2 style={{ marginBottom: "10px" }}>{offer.title}</h2>
-        <p style={{ fontSize: "0.9rem", color: "#555", marginBottom: "10px" }}>
-          🏷️ <b>{offer.category}</b>
-        </p>
-        <p style={{ lineHeight: 1.5, marginBottom: "10px" }}>
-          {offer.description}
-        </p>
+        {/* 📋 Opis */}
+        <h2>{offer.title}</h2>
+        <p>🏷️ <b>{offer.category}</b></p>
+        <p>{offer.description}</p>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: "15px",
-          }}
-        >
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
           <div>
-            <p style={{ margin: 0 }}>📍 {offer.localisation}</p>
-            <p style={{ margin: 0 }}>⭐ ocena: wkrótce</p>
+            <p>📍 {offer.localisation}</p>
+            <p>
+              ⭐ {stats.avgRounded ? stats.avgRounded.toFixed(1) : "Brak ocen"} ({stats.ratingsCount} opinii)
+            </p>
           </div>
           <h3 style={{ color: "#007bff" }}>{offer.prize} zł</h3>
         </div>
 
         {/* 🔹 Przyciski */}
-        <div
-          style={{
-            marginTop: "20px",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
           <button
             style={{
               backgroundColor: "#007bff",
@@ -112,8 +114,9 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
               padding: "10px 20px",
               cursor: "pointer",
             }}
+            onClick={() => navigate(`/reviews/${offer.id}`)}
           >
-            Skontaktuj się
+            Zobacz recenzje
           </button>
 
           <button
