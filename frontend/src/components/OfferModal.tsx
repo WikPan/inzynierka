@@ -11,6 +11,7 @@ type OfferModalProps = {
     localisation: string;
     prize: number;
     images?: { url: string }[];
+    user?: { id: string }; // 👈 potrzebne do sprawdzenia właściciela
   };
   onClose: () => void;
 };
@@ -21,19 +22,57 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
     ratingsCount: 0,
     reportsCount: 0,
   });
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   const images =
     offer.images && offer.images.length > 0
       ? offer.images.map((img) => img.url)
-      : ["https://via.placeholder.com/600x400?text=Brak+zdjęć"];
+      : ["/logo.png"]; // 👈 nasze lokalne logo zamiast placeholdera
 
+  // 🔹 Pobierz statystyki ocen
   useEffect(() => {
     axios
       .get(`http://localhost:3000/reviews/offer/${offer.id}/stats`)
       .then((res) => setStats(res.data))
       .catch((err) => console.error("Błąd pobierania statystyk:", err));
   }, [offer.id]);
+
+  // 🔹 Pobierz dane zalogowanego użytkownika
+  useEffect(() => {
+    if (!token) return;
+    axios
+      .get("http://localhost:3000/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setUserId(res.data.id))
+      .catch(() => setUserId(null));
+  }, [token]);
+
+  // 🔹 Sprawdź, czy oferta należy do użytkownika
+  const isOwner = userId && offer.user && offer.user.id === userId;
+
+  // 🔹 Obsługa usuwania oferty
+  const handleDelete = async () => {
+    if (!window.confirm("Czy na pewno chcesz usunąć tę ofertę?")) return;
+    try {
+      await axios.delete(`http://localhost:3000/offers/${offer.id}/full`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      alert("✅ Oferta została usunięta.");
+      onClose();
+      window.location.reload();
+    } catch (err) {
+      console.error("Błąd usuwania:", err);
+      alert("❌ Nie udało się usunąć oferty.");
+    }
+  };
+
+  // 🔹 Edycja oferty
+  const handleEdit = () => {
+    navigate(`/offers/edit/${offer.id}`);
+  };
 
   return (
     <div
@@ -69,6 +108,8 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
           style={{
             display: "flex",
             justifyContent: "center",
+            alignItems: "center",
+            flexWrap: "wrap",
             gap: "10px",
             marginBottom: "20px",
           }}
@@ -79,10 +120,13 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
               src={url}
               alt={`image-${i}`}
               style={{
-                width: `${100 / images.length - 2}%`,
+                width: images.length === 1 ? "70%" : `${100 / images.length - 3}%`,
+                maxWidth: images.length === 1 ? "500px" : "none",
                 maxHeight: "300px",
-                objectFit: "cover",
+                objectFit: "contain", // 👈 lepiej wyświetla logo lub proporcjonalne zdjęcia
                 borderRadius: "8px",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+                backgroundColor: "#fafafa",
               }}
             />
           ))}
@@ -90,7 +134,9 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
 
         {/* 📋 Opis */}
         <h2>{offer.title}</h2>
-        <p>🏷️ <b>{offer.category}</b></p>
+        <p>
+          🏷️ <b>{offer.category}</b>
+        </p>
         <p>{offer.description}</p>
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
@@ -100,11 +146,19 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
               ⭐ {stats.avgRounded ? stats.avgRounded.toFixed(1) : "Brak ocen"} ({stats.ratingsCount} opinii)
             </p>
           </div>
-          <h3 style={{ color: "#007bff" }}>{offer.prize} zł</h3>
+          <h3 style={{ color: "#007bff" }}>{offer.prize === 0 ? "Bezpłatnie" : `${offer.prize} zł`}</h3>
         </div>
 
         {/* 🔹 Przyciski */}
-        <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
+        <div
+          style={{
+            marginTop: "25px",
+            display: "flex",
+            justifyContent: isOwner ? "space-between" : "flex-end",
+            gap: "10px",
+          }}
+        >
+          {/* Zawsze widoczny */}
           <button
             style={{
               backgroundColor: "#007bff",
@@ -118,6 +172,39 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
           >
             Zobacz recenzje
           </button>
+
+          {/* Tylko właściciel */}
+          {isOwner && (
+            <>
+              <button
+                style={{
+                  backgroundColor: "#ffc107",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "10px 20px",
+                  cursor: "pointer",
+                  color: "#000",
+                }}
+                onClick={handleEdit}
+              >
+                ✏️ Edytuj ofertę
+              </button>
+
+              <button
+                style={{
+                  backgroundColor: "#dc3545",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "10px 20px",
+                  cursor: "pointer",
+                }}
+                onClick={handleDelete}
+              >
+                🗑️ Usuń ofertę
+              </button>
+            </>
+          )}
 
           <button
             style={{

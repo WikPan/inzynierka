@@ -45,4 +45,16 @@ export class ReviewsController {
   remove(@Param('id') id: string) {
     return this.reviewsService.remove(id);
   }
+
+  @UseGuards(AuthGuard)
+  @Post('report')
+  async reportOffer(@Req() req: any, @Body() body: { offerId: string; comment?: string }) {
+    // raporty = recenzje z 0 gwiazdek
+    return this.reviewsService.create(req.user.id, {
+      offerId: body.offerId,
+      stars: 0,
+      comment: body.comment ?? 'Zgłoszenie oferty przez użytkownika',
+    });
+  }
+
 }

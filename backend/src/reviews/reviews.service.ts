@@ -6,6 +6,7 @@ import { Review } from './reviews.entity';
 import { CreateReviewDto } from './create-review.dto';
 import { Offer } from '../offers/offer.entity';
 import { User } from '../users/users.entity';
+import { BadRequestException } from '@nestjs/common';
 
 type OfferStats = {
   sum: number;
@@ -24,20 +25,28 @@ export class ReviewsService {
   ) {}
 
 async create(userId: string, dto: CreateReviewDto) {
-  const offer = await this.offersRepo.findOne({ where: { id: dto.offerId } });
+  const offer = await this.offersRepo.findOne({
+    where: { id: dto.offerId },
+    relations: ['user'], // 👈 dodaj relację, żeby mieć właściciela
+  });
   if (!offer) throw new NotFoundException('Offer not found');
 
   const user = await this.usersRepo.findOne({ where: { id: userId } });
   if (!user) throw new NotFoundException('User not found');
 
-    const review = new Review();
-    review.user = user;
-    review.offer = offer;
-    review.stars = dto.stars;
-    if (dto.comment) review.comment = dto.comment.trim();
-    return this.reviewsRepo.save(review);
-}
+  if (offer.user.id === user.id) {
+  throw new BadRequestException('Nie możesz ocenić własnej oferty');
+  }
 
+
+  const review = new Review();
+  review.user = user;
+  review.offer = offer;
+  review.stars = dto.stars;
+  if (dto.comment) review.comment = dto.comment.trim();
+
+  return this.reviewsRepo.save(review);
+}
 
   findAll() {
     return this.reviewsRepo.find({ relations: ['user', 'offer'] });

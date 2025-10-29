@@ -6,8 +6,9 @@ import Register from "./pages/Register";
 import AddOffer from "./pages/AddOffer";
 import ProfilePage from "./pages/ProfilePage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
-import { useState } from "react";
 import ReviewPage from "./pages/ReviewPage";
+import Terms from "./components/Terms"; // ✅ nowa strona regulaminu
+import { useState } from "react";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -16,13 +17,23 @@ export default function App() {
 
   return (
     <div>
+      {/* ✅ Pasek nawigacji widoczny wszędzie */}
       <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
 
+      {/* ✅ Wszystkie trasy aplikacji */}
       <Routes>
-        <Route path="/" element={<Home />} /> 
+        {/* Strona główna */}
+        <Route path="/" element={<Home />} />
+
+        {/* Recenzje ofert */}
         <Route path="/reviews/:offerId" element={<ReviewPage />} />
+
+        {/* Logowanie i rejestracja */}
         <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/register" element={<Register />} />
+
+        {/* ✅ Nowa trasa: regulamin */}
+        <Route path="/terms" element={<Terms />} />
 
         {/* 🔹 Tylko zalogowani mogą dodawać ofertę */}
         <Route
@@ -43,6 +54,9 @@ export default function App() {
             isLoggedIn ? <ChangePasswordPage /> : <Navigate to="/login" replace />
           }
         />
+
+        {/* Fallback: przekierowanie na stronę główną */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

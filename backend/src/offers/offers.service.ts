@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Offer } from './offer.entity';
 import { OfferImage } from './offer-image.entity';
+import cloudinary from 'src/cloudinary/cloudinary.provider';
+import { Review } from '../reviews/reviews.entity';
 
 @Injectable()
 export class OffersService {
@@ -84,6 +86,54 @@ export class OffersService {
       order: { id: 'DESC' },
     });
   }
+async removeFull(id: string, userId: string) {
+  // 1️⃣ Pobierz ofertę wraz ze zdjęciami i użytkownikiem
+  const offer = await this.offersRepo.findOne({
+    where: { id },
+    relations: ['images', 'user'],
+  });
 
-  
+  if (!offer) throw new Error('Oferta nie istnieje.');
+  if (offer.user.id !== userId) throw new Error('Brak uprawnień do usunięcia tej oferty.');
+
+  // 2️⃣ Usuń wszystkie recenzje powiązane z ofertą
+  const reviewRepo = this.offersRepo.manager.getRepository(Review);
+  await reviewRepo.delete({ offer: { id } });
+
+  // 3️⃣ Usuń zdjęcia z Cloudinary
+  if (offer.images && offer.images.length > 0) {
+    const publicIds = offer.images
+      .map((img) => img.publicId)
+      .filter((id): id is string => typeof id === 'string' && id.trim() !== '');
+
+    if (publicIds.length > 0) {
+      try {
+        await cloudinary.api.delete_resources(publicIds);
+      } catch (err: any) {
+        console.warn('⚠️ Błąd podczas usuwania zdjęć z Cloudinary:', err.message);
+      }
+
+      // 4️⃣ Usuń folder tylko jeśli mamy poprawny publicId
+      const firstPublicId = offer.images[0]?.publicId;
+      if (firstPublicId) {
+        try {
+          const folderPath = firstPublicId.split('/').slice(0, -1).join('/');
+          await cloudinary.api.delete_folder(folderPath);
+        } catch (err: any) {
+          console.warn('⚠️ Błąd podczas usuwania folderu Cloudinary:', err.message);
+        }
+      }
+    }
+  }
+
+  // 5️⃣ Usuń rekordy obrazków z bazy
+  const imageRepo = this.offersRepo.manager.getRepository(OfferImage);
+  await imageRepo.delete({ offer: { id } });
+
+  // 6️⃣ Usuń samą ofertę
+  await this.offersRepo.delete(id);
+
+  return { message: '✅ Oferta i wszystkie powiązane dane zostały usunięte.' };
+}
+
 }

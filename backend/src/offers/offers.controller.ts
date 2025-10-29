@@ -124,5 +124,10 @@ export class OffersController {
       images: uploadedImages.map((img) => img.url),
     };
   }
-
+  // 🔹 Usuwanie oferty wraz z obrazkami i recenzjami
+  @UseGuards(AuthGuard)
+  @Delete(':id/full')
+  async removeFull(@Param('id') id: string, @Request() req) {
+    return this.offersService.removeFull(id, req.user.id);
+  }
 }
