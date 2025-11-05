@@ -9,6 +9,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import ReviewPage from "./pages/ReviewPage";
 import Terms from "./components/Terms"; // ✅ nowa strona regulaminu
 import { useState } from "react";
+import MessagesPage from "./pages/MessagesPage";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -46,6 +47,12 @@ export default function App() {
           path="/profile"
           element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" replace />}
         />
+        
+<Route
+  path="/messages"
+  element={isLoggedIn ? <MessagesPage /> : <Navigate to="/login" replace />}
+/>
+
 
         {/* 🔹 Zmiana hasła też tylko po zalogowaniu */}
         <Route

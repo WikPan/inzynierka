@@ -16,8 +16,13 @@ export class MessagesController {
     return this.messagesService.findOne(id);
   }
 
+  @Get('/offer/:offerId')
+  getByOffer(@Param('offerId') offerId: string) {
+    return this.messagesService.findByOffer(offerId);
+  }
+
   @Post()
-  create(@Body() body: Partial<Message>) {
+  create(@Body() body: { fromUserId: string; toUserId: string; offerId: string; content: string }) {
     return this.messagesService.create(body);
   }
 

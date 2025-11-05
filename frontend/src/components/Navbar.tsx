@@ -103,6 +103,23 @@ export default function Navbar({
               Dodaj ofertę
             </Link>
 
+            {/* 💬 Nowy przycisk do wiadomości */}
+            <Link
+              to="/messages"
+              style={{
+                color: "#333",
+                textDecoration: "none",
+                transition: "color 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#007bff")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#333")}
+            >
+              💬 Wiadomości
+            </Link>
+
             <Link
               to="/profile"
               style={{

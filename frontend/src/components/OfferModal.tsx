@@ -11,7 +11,7 @@ type OfferModalProps = {
     localisation: string;
     prize: number;
     images?: { url: string }[];
-    user?: { id: string }; // 👈 potrzebne do sprawdzenia właściciela
+    user?: { id: string; login: string };
   };
   onClose: () => void;
 };
@@ -29,9 +29,8 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
   const images =
     offer.images && offer.images.length > 0
       ? offer.images.map((img) => img.url)
-      : ["/logo.png"]; // 👈 nasze lokalne logo zamiast placeholdera
+      : ["/logo.png"];
 
-  // 🔹 Pobierz statystyki ocen
   useEffect(() => {
     axios
       .get(`http://localhost:3000/reviews/offer/${offer.id}/stats`)
@@ -39,7 +38,6 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
       .catch((err) => console.error("Błąd pobierania statystyk:", err));
   }, [offer.id]);
 
-  // 🔹 Pobierz dane zalogowanego użytkownika
   useEffect(() => {
     if (!token) return;
     axios
@@ -50,10 +48,8 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
       .catch(() => setUserId(null));
   }, [token]);
 
-  // 🔹 Sprawdź, czy oferta należy do użytkownika
   const isOwner = userId && offer.user && offer.user.id === userId;
 
-  // 🔹 Obsługa usuwania oferty
   const handleDelete = async () => {
     if (!window.confirm("Czy na pewno chcesz usunąć tę ofertę?")) return;
     try {
@@ -69,7 +65,6 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
     }
   };
 
-  // 🔹 Edycja oferty
   const handleEdit = () => {
     navigate(`/offers/edit/${offer.id}`);
   };
@@ -123,7 +118,7 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
                 width: images.length === 1 ? "70%" : `${100 / images.length - 3}%`,
                 maxWidth: images.length === 1 ? "500px" : "none",
                 maxHeight: "300px",
-                objectFit: "contain", // 👈 lepiej wyświetla logo lub proporcjonalne zdjęcia
+                objectFit: "contain",
                 borderRadius: "8px",
                 boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
                 backgroundColor: "#fafafa",
@@ -158,7 +153,6 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
             gap: "10px",
           }}
         >
-          {/* Zawsze widoczny */}
           <button
             style={{
               backgroundColor: "#007bff",
@@ -170,10 +164,27 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
             }}
             onClick={() => navigate(`/reviews/${offer.id}`)}
           >
-            Zobacz recenzje
+            ⭐ Zobacz recenzje
           </button>
 
-          {/* Tylko właściciel */}
+          {!isOwner && (
+            <button
+              style={{
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                padding: "10px 20px",
+                cursor: "pointer",
+              }}
+              onClick={() =>
+                navigate(`/messages/${offer.id}`, { state: { toUserId: offer.user?.id } })
+              }
+            >
+              ✉️ Napisz wiadomość
+            </button>
+          )}
+
           {isOwner && (
             <>
               <button

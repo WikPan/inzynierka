@@ -9,6 +9,7 @@ import {
 import { User } from '../users/users.entity';
 import { Review } from '../reviews/reviews.entity';
 import { OfferImage } from './offer-image.entity';
+import { Message } from '../messages/messages.entity';
 
 @Entity({ name: 'offers' })
 export class Offer {
@@ -47,4 +48,7 @@ export class Offer {
 
   @OneToMany(() => Review, (review) => review.offer)
   reviews: Review[];
+
+  @OneToMany(() => Message, message => message.offer)
+  messages: Message[];
 }
