@@ -32,12 +32,16 @@ export default function ProfilePage() {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [loadingOffers, setLoadingOffers] = useState(true);
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterFree, setFilterFree] = useState(false);
-  const navigate = useNavigate();
 
+  // 🔹 Filtry
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterTitle, setFilterTitle] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  // Pobieranie danych użytkownika i ofert
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -88,13 +92,28 @@ export default function ProfilePage() {
     fetchOffers();
   }, [navigate, token]);
 
-  // 🔹 Filtrowanie ofert
+  // 🔹 Filtrowanie ofert po tytule, lokalizacji i kategorii
   useEffect(() => {
     let result = [...offers];
-    if (filterCategory) result = result.filter(o => o.category === filterCategory);
-    if (filterFree) result = result.filter(o => o.prize === 0);
+
+    if (filterTitle.trim()) {
+      result = result.filter((o) =>
+        o.title.toLowerCase().includes(filterTitle.toLowerCase())
+      );
+    }
+
+    if (filterLocation.trim()) {
+      result = result.filter((o) =>
+        o.localisation.toLowerCase().includes(filterLocation.toLowerCase())
+      );
+    }
+
+    if (filterCategory) {
+      result = result.filter((o) => o.category === filterCategory);
+    }
+
     setFilteredOffers(result);
-  }, [filterCategory, filterFree, offers]);
+  }, [filterTitle, filterLocation, filterCategory, offers]);
 
   const handleEmailChange = async () => {
     try {
@@ -144,7 +163,6 @@ export default function ProfilePage() {
     }
   };
 
-  // 🔹 Usuwanie oferty (łącznie z Cloudinary)
   const handleDeleteOffer = async (id: string) => {
     if (!window.confirm("Czy na pewno chcesz usunąć tę ofertę?")) return;
     try {
@@ -183,18 +201,39 @@ export default function ProfilePage() {
         <div
           style={{
             display: "flex",
-            justifyContent: "center",
+            flexWrap: "wrap",
             gap: "10px",
+            justifyContent: "center",
             marginBottom: "20px",
+            background: "#fff",
+            padding: "15px",
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
           }}
         >
+          <input
+            type="text"
+            placeholder="🔍 Tytuł oferty"
+            value={filterTitle}
+            onChange={(e) => setFilterTitle(e.target.value)}
+            style={{
+              flex: "1 1 200px",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              fontSize: "0.95rem",
+            }}
+          />
+
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
             style={{
-              padding: "8px",
+              flex: "1 1 180px",
+              padding: "10px",
               borderRadius: "8px",
               border: "1px solid #ccc",
+              fontSize: "0.95rem",
             }}
           >
             <option value="">Wszystkie kategorie</option>
@@ -206,14 +245,19 @@ export default function ProfilePage() {
             <option value="Inne">Inne</option>
           </select>
 
-          <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <input
-              type="checkbox"
-              checked={filterFree}
-              onChange={(e) => setFilterFree(e.target.checked)}
-            />
-            Tylko bezpłatne
-          </label>
+          <input
+            type="text"
+            placeholder="📍 Miejsce"
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+            style={{
+              flex: "1 1 180px",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              fontSize: "0.95rem",
+            }}
+          />
         </div>
 
         {/* 🔹 Lista ofert */}

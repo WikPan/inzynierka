@@ -10,6 +10,7 @@ import ReviewPage from "./pages/ReviewPage";
 import Terms from "./components/Terms"; // ✅ nowa strona regulaminu
 import { useState } from "react";
 import MessagesPage from "./pages/MessagesPage";
+import AdminPage from "./pages/AdminPage";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -47,7 +48,8 @@ export default function App() {
           path="/profile"
           element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" replace />}
         />
-        
+        <Route path="/admin" element={<AdminPage />} />
+
 <Route
   path="/messages"
   element={isLoggedIn ? <MessagesPage /> : <Navigate to="/login" replace />}

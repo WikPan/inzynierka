@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import logo from "../assets/logo.png"; // 🔹 Twoje logo
+import logo from "../assets/logo.png";
 
 export default function Navbar({
   isLoggedIn,
@@ -9,6 +9,11 @@ export default function Navbar({
   setIsLoggedIn: (val: boolean) => void;
 }) {
   const navigate = useNavigate();
+
+  // Pobierz dane użytkownika z localStorage
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const accountType = user?.accountType?.toLowerCase();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -52,7 +57,7 @@ export default function Navbar({
         />
       </div>
 
-      {/* 🔹 Linki nawigacyjne */}
+      {/* 🔹 Linki */}
       <div
         style={{
           display: "flex",
@@ -69,8 +74,6 @@ export default function Navbar({
             textDecoration: "none",
             transition: "color 0.2s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#007bff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#333")}
         >
           Strona główna
         </Link>
@@ -82,56 +85,56 @@ export default function Navbar({
             textDecoration: "none",
             transition: "color 0.2s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#007bff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#333")}
         >
           Oferty
         </Link>
 
         {isLoggedIn ? (
           <>
-            <Link
-              to="/add-offer"
-              style={{
-                color: "#333",
-                textDecoration: "none",
-                transition: "color 0.2s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#007bff")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#333")}
-            >
-              Dodaj ofertę
-            </Link>
+            {accountType === "admin" ? (
+              <Link
+                to="/admin"
+                style={{
+                  color: "#333",
+                  textDecoration: "none",
+                  transition: "color 0.2s",
+                }}
+              >
+                👑 Panel admina
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/add-offer"
+                  style={{
+                    color: "#333",
+                    textDecoration: "none",
+                  }}
+                >
+                  Dodaj ofertę
+                </Link>
 
-            {/* 💬 Nowy przycisk do wiadomości */}
-            <Link
-              to="/messages"
-              style={{
-                color: "#333",
-                textDecoration: "none",
-                transition: "color 0.2s",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#007bff")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#333")}
-            >
-              💬 Wiadomości
-            </Link>
+                <Link
+                  to="/messages"
+                  style={{
+                    color: "#333",
+                    textDecoration: "none",
+                  }}
+                >
+                  💬 Wiadomości
+                </Link>
 
-            <Link
-              to="/profile"
-              style={{
-                color: "#333",
-                textDecoration: "none",
-                transition: "color 0.2s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#007bff")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#333")}
-            >
-              Profil
-            </Link>
+                <Link
+                  to="/profile"
+                  style={{
+                    color: "#333",
+                    textDecoration: "none",
+                  }}
+                >
+                  Profil
+                </Link>
+              </>
+            )}
 
             <button
               onClick={handleLogout}
@@ -145,12 +148,6 @@ export default function Navbar({
                 cursor: "pointer",
                 transition: "background-color 0.2s",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#0056b3")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#007bff")
-              }
             >
               Wyloguj
             </button>
@@ -166,14 +163,7 @@ export default function Navbar({
                 padding: "8px 16px",
                 textDecoration: "none",
                 fontWeight: 600,
-                transition: "background-color 0.2s",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#0056b3")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#007bff")
-              }
             >
               Zaloguj się
             </Link>
@@ -187,15 +177,6 @@ export default function Navbar({
                 padding: "8px 16px",
                 textDecoration: "none",
                 fontWeight: 600,
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#007bff";
-                e.currentTarget.style.color = "#fff";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "#007bff";
               }}
             >
               Zarejestruj się

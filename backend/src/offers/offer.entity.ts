@@ -43,6 +43,9 @@ export class Offer {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Column({ default: false })
+  blocked: boolean;
+
   @OneToMany(() => OfferImage, (img) => img.offer, { cascade: true })
   images: OfferImage[];
 

@@ -9,7 +9,7 @@ import { User } from './users.entity';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import * as bcrypt from 'bcryptjs';
-import * as jwt from 'jsonwebtoken'; // ✅ dodane
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class UsersService {
@@ -63,26 +63,31 @@ export class UsersService {
     const user = await this.usersRepo.findOne({ where: { login } });
     if (!user) throw new UnauthorizedException('Nieprawidłowy login lub hasło');
 
+    // 🔸 Sprawdź, czy konto nie jest zablokowane
+    if (user.accountType === 'BLOCKED') {
+      throw new UnauthorizedException(
+        'Twoje konto jest zablokowane. Skontaktuj się z administratorem.',
+      );
+    }
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid)
       throw new UnauthorizedException('Nieprawidłowy login lub hasło');
 
-    // ✅ Tworzymy token JWT zawierający ID użytkownika
+    // 🔸 Tworzymy token JWT zawierający ID użytkownika
     const payload = { id: user.id, username: user.login };
     const token = jwt.sign(payload, process.env.JWT_SECRET || 'sekretnyklucz', {
       expiresIn: '1d',
     });
 
-    // ✅ Zwracamy token i dane użytkownika
+    // 🔸 Zwracamy token i dane użytkownika
     return {
       access_token: token,
+      accountType: user.accountType,
+      id: user.id,
+      login: user.login,
+      email: user.email,
       message: 'Zalogowano pomyślnie',
-      user: {
-        id: user.id,
-        login: user.login,
-        email: user.email,
-        accountType: user.accountType,
-      },
     };
   }
 
@@ -131,15 +136,23 @@ export class UsersService {
     user.password = await bcrypt.hash(newPassword, 10);
     return this.usersRepo.save(user);
   }
-      // 🔹 Umożliwia tworzenie użytkownika bezpośrednio z AuthService
-    async create(data: Partial<User>): Promise<User> {
-      const user = this.usersRepo.create(data);
-      return this.usersRepo.save(user);
-    }
 
-    // 🔹 Znajduje użytkownika po loginie (dla AuthService)
-    async findByLogin(login: string): Promise<User | null> {
-      return this.usersRepo.findOne({ where: { login } });
-    }
+  // 🔹 Tworzenie użytkownika (np. przez AuthService)
+  async create(data: Partial<User>): Promise<User> {
+    const user = this.usersRepo.create(data);
+    return this.usersRepo.save(user);
+  }
 
+  // 🔹 Znajdź użytkownika po loginie
+  async findByLogin(login: string): Promise<User | null> {
+    return this.usersRepo.findOne({ where: { login } });
+  }
+
+  // 🔹 Zmiana typu konta (np. blokowanie, nadanie admina)
+  async updateAccountType(id: string, type: 'USER' | 'ADMIN' | 'BLOCKED') {
+    const user = await this.usersRepo.findOneBy({ id });
+    if (!user) throw new BadRequestException('Nie znaleziono użytkownika');
+    user.accountType = type;
+    return this.usersRepo.save(user);
+  }
 }

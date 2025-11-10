@@ -21,16 +21,38 @@ export default function Login({ setIsLoggedIn }: LoginProps) {
     setLoading(true);
     try {
       const data = await loginUser({ login, password });
+      console.log("📦 Dane logowania:", data);
 
-      if (data.access_token) {
+      // ✅ Obsługa obu możliwych formatów danych z backendu
+      if (data?.access_token) {
+        const userData = data.user || {
+          id: data.id,
+          login: data.login,
+          email: data.email,
+          accountType: data.accountType || "user",
+        };
+
+        // Zapisz dane do localStorage
         localStorage.setItem("token", data.access_token);
+        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("accountType", userData.accountType);
+
         alert("✅ Zalogowano pomyślnie!");
         setIsLoggedIn(true);
-        navigate("/");
+
+        // Przekierowanie w zależności od typu konta
+        const type = userData.accountType?.toLowerCase();
+        if (type === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/profile");
+        }
       } else {
+        console.error("❌ Niepoprawna odpowiedź z serwera:", data);
         alert("❌ Niepoprawna odpowiedź z serwera.");
       }
     } catch (err: any) {
+      console.error("❌ Błąd logowania:", err);
       alert("❌ Błąd logowania: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
@@ -73,7 +95,9 @@ export default function Login({ setIsLoggedIn }: LoginProps) {
 
         {/* --- Pola --- */}
         <div style={{ marginBottom: "18px", textAlign: "left" }}>
-          <label style={{ display: "block", marginBottom: "6px", fontWeight: 500 }}>Login</label>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: 500 }}>
+            Login
+          </label>
           <input
             type="text"
             placeholder="Wpisz login"
@@ -100,7 +124,9 @@ export default function Login({ setIsLoggedIn }: LoginProps) {
         </div>
 
         <div style={{ marginBottom: "30px", textAlign: "left" }}>
-          <label style={{ display: "block", marginBottom: "6px", fontWeight: 500 }}>Hasło</label>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: 500 }}>
+            Hasło
+          </label>
           <input
             type="password"
             placeholder="Wpisz hasło"
@@ -132,7 +158,7 @@ export default function Login({ setIsLoggedIn }: LoginProps) {
             onClick={handleLogin}
             disabled={loading}
             style={{
-              width: "70%", // 👈 trochę węższy, ale wycentrowany
+              width: "70%",
               background: loading
                 ? "#6c757d"
                 : "linear-gradient(90deg, #007bff 0%, #3399ff 100%)",

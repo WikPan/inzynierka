@@ -20,7 +20,7 @@ export class OffersService {
   async findOne(id: string) {
     return this.offersRepo.findOne({
       where: { id },
-      relations: ['images'],
+      relations: ['images', 'user'],
     });
   }
 
@@ -34,17 +34,13 @@ export class OffersService {
     let latitude = data.latitude;
     let longitude = data.longitude;
 
-    // Jeśli użytkownik nie podał współrzędnych — spróbuj pobrać z OpenStreetMap
     if ((!latitude || !longitude) && data.localisation) {
       try {
         const query = encodeURIComponent(data.localisation);
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&countrycodes=pl&q=${query}`,
-          {
-            headers: { 'User-Agent': 'InzynierkaApp/1.0 (kontakt@example.com)' },
-          },
+          { headers: { 'User-Agent': 'InzynierkaApp/1.0 (kontakt@example.com)' } },
         );
-
         const results = (await response.json()) as any[];
         if (Array.isArray(results) && results.length > 0) {
           latitude = parseFloat(results[0].lat);
@@ -59,14 +55,16 @@ export class OffersService {
       ...data,
       latitude,
       longitude,
+      blocked: false, // ✅ nowe oferty zawsze aktywne
     });
 
     return this.offersRepo.save(offer);
   }
 
-  // 🔹 Wszystkie oferty
+  // 🔹 Wszystkie oferty (tylko aktywne i od niezablokowanych użytkowników)
   findAll() {
     return this.offersRepo.find({
+      where: { blocked: false }, // ✅ ukrywa zablokowane
       relations: ['images', 'user'],
       order: { id: 'DESC' },
     });
@@ -86,54 +84,110 @@ export class OffersService {
       order: { id: 'DESC' },
     });
   }
-async removeFull(id: string, userId: string) {
-  // 1️⃣ Pobierz ofertę wraz ze zdjęciami i użytkownikiem
-  const offer = await this.offersRepo.findOne({
-    where: { id },
-    relations: ['images', 'user'],
-  });
 
-  if (!offer) throw new Error('Oferta nie istnieje.');
-  if (offer.user.id !== userId) throw new Error('Brak uprawnień do usunięcia tej oferty.');
+  // 🔹 Usuwanie oferty z powiązanymi danymi
+  async removeFull(id: string, userId: string) {
+    const offer = await this.offersRepo.findOne({
+      where: { id },
+      relations: ['images', 'user'],
+    });
 
-  // 2️⃣ Usuń wszystkie recenzje powiązane z ofertą
-  const reviewRepo = this.offersRepo.manager.getRepository(Review);
-  await reviewRepo.delete({ offer: { id } });
+    if (!offer) throw new Error('Oferta nie istnieje.');
+    if (offer.user.id !== userId)
+      throw new Error('Brak uprawnień do usunięcia tej oferty.');
 
-  // 3️⃣ Usuń zdjęcia z Cloudinary
-  if (offer.images && offer.images.length > 0) {
-    const publicIds = offer.images
-      .map((img) => img.publicId)
-      .filter((id): id is string => typeof id === 'string' && id.trim() !== '');
+    const reviewRepo = this.offersRepo.manager.getRepository(Review);
+    await reviewRepo.delete({ offer: { id } });
 
-    if (publicIds.length > 0) {
-      try {
-        await cloudinary.api.delete_resources(publicIds);
-      } catch (err: any) {
-        console.warn('⚠️ Błąd podczas usuwania zdjęć z Cloudinary:', err.message);
-      }
+    if (offer.images && offer.images.length > 0) {
+      const publicIds = offer.images
+        .map((img) => img.publicId)
+        .filter((id): id is string => typeof id === 'string' && id.trim() !== '');
 
-      // 4️⃣ Usuń folder tylko jeśli mamy poprawny publicId
-      const firstPublicId = offer.images[0]?.publicId;
-      if (firstPublicId) {
+      if (publicIds.length > 0) {
         try {
-          const folderPath = firstPublicId.split('/').slice(0, -1).join('/');
-          await cloudinary.api.delete_folder(folderPath);
+          await cloudinary.api.delete_resources(publicIds);
         } catch (err: any) {
-          console.warn('⚠️ Błąd podczas usuwania folderu Cloudinary:', err.message);
+          console.warn('⚠️ Błąd podczas usuwania zdjęć z Cloudinary:', err.message);
+        }
+
+        const firstPublicId = offer.images[0]?.publicId;
+        if (firstPublicId) {
+          try {
+            const folderPath = firstPublicId.split('/').slice(0, -1).join('/');
+            await cloudinary.api.delete_folder(folderPath);
+          } catch (err: any) {
+            console.warn('⚠️ Błąd podczas usuwania folderu Cloudinary:', err.message);
+          }
         }
       }
     }
+
+    const imageRepo = this.offersRepo.manager.getRepository(OfferImage);
+    await imageRepo.delete({ offer: { id } });
+    await this.offersRepo.delete(id);
+
+    return { message: '✅ Oferta i wszystkie powiązane dane zostały usunięte.' };
   }
 
-  // 5️⃣ Usuń rekordy obrazków z bazy
-  const imageRepo = this.offersRepo.manager.getRepository(OfferImage);
-  await imageRepo.delete({ offer: { id } });
+  // 🔹 Wyszukiwanie ofert — tu filtrujemy zablokowane
+  async searchOffers(filters: {
+    title?: string;
+    category?: string;
+    localisation?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }) {
+    const query = this.offersRepo
+      .createQueryBuilder('offer')
+      .leftJoinAndSelect('offer.images', 'images')
+      .leftJoinAndSelect('offer.user', 'user')
+      .where('offer.blocked = false') // ✅ nie pokazuj zablokowanych ofert
+      .andWhere('user.accountType != :blocked', { blocked: 'BLOCKED' }); // ✅ nie pokazuj ofert zablokowanych użytkowników
 
-  // 6️⃣ Usuń samą ofertę
-  await this.offersRepo.delete(id);
+    if (filters.title) {
+      query.andWhere('LOWER(offer.title) LIKE :title', {
+        title: `%${filters.title.toLowerCase()}%`,
+      });
+    }
 
-  return { message: '✅ Oferta i wszystkie powiązane dane zostały usunięte.' };
-}
+    if (
+      filters.category &&
+      typeof filters.category === 'string' &&
+      filters.category.trim() !== ''
+    ) {
+      query.andWhere('LOWER(offer.category) LIKE :category', {
+        category: `%${filters.category.toLowerCase()}%`,
+      });
+    }
 
+    if (filters.localisation) {
+      query.andWhere('LOWER(offer.localisation) LIKE :loc', {
+        loc: `%${filters.localisation.toLowerCase()}%`,
+      });
+    }
+
+    if (filters.minPrice !== undefined) {
+      query.andWhere('offer.prize >= :minPrice', { minPrice: filters.minPrice });
+    }
+
+    if (filters.maxPrice !== undefined) {
+      query.andWhere('offer.prize <= :maxPrice', { maxPrice: filters.maxPrice });
+    }
+
+    return query.getMany();
+  }
+
+  // 🔹 Sugestie tytułów — też pomijamy zablokowane
+  async suggestTitles(q: string): Promise<{ title: string }[]> {
+    return this.offersRepo
+      .createQueryBuilder('offer')
+      .select('DISTINCT offer.title', 'title')
+      .leftJoin('offer.user', 'user')
+      .where('offer.blocked = false') // ✅ nie pokazuj zablokowanych
+      .andWhere('user.accountType != :blocked', { blocked: 'BLOCKED' }) // ✅ ukryj oferty od zbanowanych
+      .andWhere('LOWER(offer.title) LIKE :q', { q: `%${q.toLowerCase()}%` })
+      .limit(5)
+      .getRawMany();
+  }
 }

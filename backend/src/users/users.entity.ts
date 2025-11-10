@@ -20,8 +20,8 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ type: 'enum', enum: ['admin', 'user'], default: 'user' })
-  accountType: AccountType;
+  @Column({ default: 'USER' })
+  accountType: 'USER' | 'ADMIN' | 'BLOCKED';
 
   @CreateDateColumn()
   createdAt: Date;

@@ -11,6 +11,6 @@ import { MessagesGateway } from './messages.gateway';
   imports: [TypeOrmModule.forFeature([Message, User, Offer])],
   providers: [MessagesService, MessagesGateway],
   controllers: [MessagesController],
+  exports: [MessagesService], // ✅ DODAJ TO — udostępnia serwis innym modułom
 })
 export class MessagesModule {}
-
