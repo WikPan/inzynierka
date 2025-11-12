@@ -1,4 +1,3 @@
-// src/offers/offers.controller.ts
 import {
   Controller,
   Get,
@@ -31,13 +30,13 @@ export class OffersController {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  // 🔹 Pobranie wszystkich ofert (dla debugowania, może zostać)
+  // 🔹 Wszystkie oferty
   @Get()
   getAll(): Promise<Offer[]> {
     return this.offersService.findAll();
   }
 
-  // 🔹 Wyszukiwanie ofert — tu backend sam odfiltruje zablokowane
+  // 🔹 Wyszukiwanie z filtrami i lokalizacją (bez radius)
   @Get('search')
   async searchOffers(
     @Query('title') title?: string,
@@ -45,6 +44,8 @@ export class OffersController {
     @Query('localisation') localisation?: string,
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
+    @Query('lat') lat?: string,
+    @Query('lon') lon?: string,
   ): Promise<Offer[]> {
     return this.offersService.searchOffers({
       title,
@@ -52,10 +53,12 @@ export class OffersController {
       localisation,
       minPrice: minPrice ? parseFloat(minPrice) : undefined,
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      lat: lat ? parseFloat(lat) : undefined,
+      lon: lon ? parseFloat(lon) : undefined,
     });
   }
 
-  // 🔹 Sugestie tytułów ofert
+  // 🔹 Sugestie tytułów
   @Get('suggest-titles')
   async suggestTitles(@Query('q') q: string) {
     if (!q || q.length < 2) return [];
@@ -69,13 +72,13 @@ export class OffersController {
     return this.offersService.findByUser(req.user.id);
   }
 
-  // 🔹 Pojedyncza oferta po ID
+  // 🔹 Pojedyncza oferta
   @Get(':id')
   getOne(@Param('id') id: string) {
     return this.offersService.findOne(id);
   }
 
-  // 🔹 Tworzenie oferty
+  // 🔹 Tworzenie nowej oferty
   @UseGuards(AuthGuard)
   @Post()
   async create(@Body() body: any, @Request() req) {
@@ -92,14 +95,12 @@ export class OffersController {
     const user = await this.userRepository.findOne({
       where: { id: req.user.id },
     });
-    if (!user) throw new Error(`User with id ${req.user.id} not found`);
-
-    // 🛑 Blokada — użytkownik zablokowany nie może tworzyć ofert
+    if (!user) throw new BadRequestException('Nie znaleziono użytkownika.');
     if (user.accountType === 'BLOCKED') {
-      throw new BadRequestException('Twoje konto jest zablokowane. Nie możesz dodawać ofert.');
+      throw new BadRequestException('Twoje konto jest zablokowane.');
     }
 
-    const offer = {
+    return this.offersService.create({
       title,
       description,
       prize,
@@ -108,18 +109,10 @@ export class OffersController {
       latitude,
       longitude,
       user,
-    };
-
-    return this.offersService.create(offer);
+    });
   }
 
-  // 🔹 Usuwanie oferty (proste)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.offersService.remove(id);
-  }
-
-  // 🔹 Upload maks. 3 zdjęć do oferty
+  // 🔹 Upload zdjęć do oferty
   @UseGuards(AuthGuard)
   @Post(':id/upload-images')
   @UseInterceptors(FilesInterceptor('files', 3))
@@ -128,9 +121,8 @@ export class OffersController {
     @UploadedFiles() files: Express.Multer.File[],
     @Request() req,
   ) {
-    if (!files || files.length === 0) {
+    if (!files || files.length === 0)
       throw new BadRequestException('Nie przesłano żadnych plików.');
-    }
 
     const offer = await this.offersService.findOne(offerId);
     if (!offer) throw new BadRequestException('Nie znaleziono oferty.');
@@ -151,7 +143,6 @@ export class OffersController {
               newImage.url = result.secure_url;
               newImage.publicId = result.public_id;
               newImage.offer = offer;
-
               resolve(newImage);
             },
           );
@@ -168,10 +159,16 @@ export class OffersController {
     };
   }
 
-  // 🔹 Usuwanie oferty wraz z obrazkami i recenzjami
+  // 🔹 Usuwanie oferty z powiązanymi danymi
   @UseGuards(AuthGuard)
   @Delete(':id/full')
   async removeFull(@Param('id') id: string, @Request() req) {
     return this.offersService.removeFull(id, req.user.id);
+  }
+
+  // 🔹 Proste usuwanie
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.offersService.remove(id);
   }
 }

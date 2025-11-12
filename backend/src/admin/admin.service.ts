@@ -21,42 +21,55 @@ export class AdminService {
     private readonly messagesService: MessagesService,
   ) {}
 
-  // 👥 Lista użytkowników z raportami (recenzje z 0 gwiazdek)
-  async getReportedUsers() {
+  // 👥 Lista WSZYSTKICH użytkowników (zlicza zgłoszenia)
+  async getAllUsers() {
     const users = await this.usersRepo.find();
-    const reportedUsers: any[] = [];
+    const reported = await this.reviewsRepo
+      .createQueryBuilder('review')
+      .select('offer.userId', 'userId')
+      .addSelect('COUNT(*)', 'reportsCount')
+      .where('review.stars = 0')
+      .leftJoin('review.offer', 'offer')
+      .groupBy('offer.userId')
+      .getRawMany();
 
-    for (const user of users) {
-      const reportsCount = await this.reviewsRepo.count({
-        where: { stars: 0, offer: { user: { id: user.id } } },
-        relations: ['offer', 'offer.user'],
-      });
+    const map = new Map(reported.map(r => [r.userId, Number(r.reportsCount)]));
 
-      if (reportsCount > 0) {
-        reportedUsers.push({ ...user, reportsCount });
-      }
-    }
-
-    return reportedUsers;
+    return users.map(u => ({
+      ...u,
+      reportsCount: map.get(u.id) || 0,
+    }));
   }
 
-  // 📦 Lista ofert, które dostały negatywne recenzje
-  async getReportedOffers() {
+  // 📦 Lista WSZYSTKICH ofert (zlicza zgłoszenia)
+  async getAllOffers() {
     const offers = await this.offersRepo.find({ relations: ['user'] });
-    const reportedOffers: any[] = [];
+    const reported = await this.reviewsRepo
+      .createQueryBuilder('review')
+      .select('review.offerId', 'offerId')
+      .addSelect('COUNT(*)', 'reportsCount')
+      .where('review.stars = 0')
+      .groupBy('review.offerId')
+      .getRawMany();
 
-    for (const offer of offers) {
-      const reportsCount = await this.reviewsRepo.count({
-        where: { stars: 0, offer: { id: offer.id } },
-        relations: ['offer'],
-      });
+    const map = new Map(reported.map(r => [r.offerId, Number(r.reportsCount)]));
 
-      if (reportsCount > 0) {
-        reportedOffers.push({ ...offer, reportsCount });
-      }
-    }
+    return offers.map(o => ({
+      ...o,
+      reportsCount: map.get(o.id) || 0,
+    }));
+  }
 
-    return reportedOffers;
+  // 👥 Tylko użytkownicy ze zgłoszeniami
+  async getReportedUsers() {
+    const all = await this.getAllUsers();
+    return all.filter(u => u.reportsCount > 0);
+  }
+
+  // 📦 Tylko oferty ze zgłoszeniami
+  async getReportedOffers() {
+    const all = await this.getAllOffers();
+    return all.filter(o => o.reportsCount > 0);
   }
 
   // 🚫 Zablokuj użytkownika
@@ -66,8 +79,17 @@ export class AdminService {
 
     user.accountType = 'BLOCKED';
     await this.usersRepo.save(user);
-
     return { message: `Użytkownik ${user.login} został zablokowany.` };
+  }
+
+  // 🔓 Odblokuj użytkownika
+  async unblockUser(id: string) {
+    const user = await this.usersRepo.findOneBy({ id });
+    if (!user) throw new NotFoundException('Nie znaleziono użytkownika.');
+
+    user.accountType = 'USER';
+    await this.usersRepo.save(user);
+    return { message: `Użytkownik ${user.login} został odblokowany.` };
   }
 
   // ❌ Usuń użytkownika
@@ -79,7 +101,7 @@ export class AdminService {
     return { message: `Użytkownik ${user.login} został usunięty.` };
   }
 
-  // 🚫 Zablokuj ofertę (z automatyczną wiadomością do właściciela)
+  // 🚫 Zablokuj ofertę
   async blockOffer(id: string, adminId: string) {
     const offer = await this.offersRepo.findOne({
       where: { id },
@@ -87,10 +109,9 @@ export class AdminService {
     });
     if (!offer) throw new NotFoundException('Nie znaleziono oferty.');
 
-    offer.blocked = true; // musisz mieć pole `blocked: boolean` w encji Offer
+    offer.blocked = true;
     await this.offersRepo.save(offer);
 
-    // ✉️ automatyczna wiadomość
     await this.messagesService.create({
       fromUserId: adminId,
       toUserId: offer.user.id,
@@ -101,7 +122,28 @@ export class AdminService {
     return { message: `Oferta "${offer.title}" została zablokowana.` };
   }
 
-  // ❌ Usuń ofertę (z automatyczną wiadomością do właściciela)
+  // 🔓 Odblokuj ofertę
+  async unblockOffer(id: string, adminId: string) {
+    const offer = await this.offersRepo.findOne({
+      where: { id },
+      relations: ['user'],
+    });
+    if (!offer) throw new NotFoundException('Nie znaleziono oferty.');
+
+    offer.blocked = false;
+    await this.offersRepo.save(offer);
+
+    await this.messagesService.create({
+      fromUserId: adminId,
+      toUserId: offer.user.id,
+      offerId: offer.id,
+      content: `Twoja oferta "${offer.title}" została odblokowana przez administratora.`,
+    });
+
+    return { message: `Oferta "${offer.title}" została odblokowana.` };
+  }
+
+  // ❌ Usuń ofertę
   async deleteOffer(id: string, adminId: string) {
     const offer = await this.offersRepo.findOne({
       where: { id },
@@ -109,7 +151,6 @@ export class AdminService {
     });
     if (!offer) throw new NotFoundException('Nie znaleziono oferty.');
 
-    // ✉️ automatyczna wiadomość
     await this.messagesService.create({
       fromUserId: adminId,
       toUserId: offer.user.id,

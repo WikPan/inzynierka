@@ -92,7 +92,7 @@ export default function ProfilePage() {
     fetchOffers();
   }, [navigate, token]);
 
-  // 🔹 Filtrowanie ofert po tytule, lokalizacji i kategorii
+  // 🔹 Filtrowanie ofert
   useEffect(() => {
     let result = [...offers];
 
@@ -181,283 +181,336 @@ export default function ProfilePage() {
   return (
     <div
       style={{
+        minHeight: "100vh",
+        background: "linear-gradient(180deg, #f9fbff, #e8f2ff)",
+        padding: "50px 20px",
         display: "flex",
-        gap: "40px",
-        margin: "50px auto",
-        maxWidth: "1300px",
-        background: "linear-gradient(180deg, #f8faff 0%, #eef3f8 100%)",
-        borderRadius: "20px",
-        padding: "30px",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+        justifyContent: "center",
       }}
     >
-      {/* LEWA STRONA – OFERTY */}
-      <div style={{ flex: 2 }}>
-        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-          Twoje oferty
-        </h2>
-
-        {/* 🔹 Filtry */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "10px",
-            justifyContent: "center",
-            marginBottom: "20px",
-            background: "#fff",
-            padding: "15px",
-            borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-          }}
-        >
-          <input
-            type="text"
-            placeholder="🔍 Tytuł oferty"
-            value={filterTitle}
-            onChange={(e) => setFilterTitle(e.target.value)}
-            style={{
-              flex: "1 1 200px",
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              fontSize: "0.95rem",
-            }}
-          />
-
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            style={{
-              flex: "1 1 180px",
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              fontSize: "0.95rem",
-            }}
-          >
-            <option value="">Wszystkie kategorie</option>
-            <option value="Pomoc">Pomoc</option>
-            <option value="Kuchnia">Kuchnia</option>
-            <option value="Ogród">Ogród</option>
-            <option value="Prace dorywcze">Prace dorywcze</option>
-            <option value="Transport">Transport</option>
-            <option value="Inne">Inne</option>
-          </select>
-
-          <input
-            type="text"
-            placeholder="📍 Miejsce"
-            value={filterLocation}
-            onChange={(e) => setFilterLocation(e.target.value)}
-            style={{
-              flex: "1 1 180px",
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              fontSize: "0.95rem",
-            }}
-          />
-        </div>
-
-        {/* 🔹 Lista ofert */}
-        {loadingOffers ? (
-          <p style={{ textAlign: "center" }}>Ładowanie ofert...</p>
-        ) : filteredOffers.length === 0 ? (
-          <p style={{ textAlign: "center" }}>Nie znaleziono ofert.</p>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-              gap: "20px",
-              justifyItems: "center",
-            }}
-          >
-            {filteredOffers.map((offer) => (
-              <OfferCard
-                key={offer.id}
-                id={offer.id}
-                title={offer.title}
-                localisation={offer.localisation}
-                price={offer.prize}
-                category={offer.category}
-                images={
-                  offer.images && offer.images.length > 0
-                    ? offer.images.map((img) => img.url)
-                    : ["/logo.png"]
-                }
-                rating={offer.avgRounded ?? undefined}
-                ratingsCount={offer.ratingsCount ?? 0}
-                onClick={() => setSelectedOffer(offer)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* 🔹 Modal szczegółów oferty */}
-        {selectedOffer && (
-          <OfferModal
-            offer={selectedOffer}
-            onClose={() => setSelectedOffer(null)}
-          >
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                justifyContent: "center",
-                gap: "15px",
-              }}
-            >
-              <button
-                style={{
-                  backgroundColor: "#007bff",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "10px 20px",
-                  cursor: "pointer",
-                }}
-                onClick={() => navigate(`/offers/edit/${selectedOffer.id}`)}
-              >
-                ✏️ Edytuj
-              </button>
-              <button
-                style={{
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "10px 20px",
-                  cursor: "pointer",
-                }}
-                onClick={() => handleDeleteOffer(selectedOffer.id)}
-              >
-                ❌ Usuń
-              </button>
-            </div>
-          </OfferModal>
-        )}
-      </div>
-
-      {/* PRAWA STRONA – PROFIL */}
       <div
         style={{
-          flex: 1,
-          backgroundColor: "#fff",
-          borderRadius: "16px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-          padding: "20px",
-          height: "fit-content",
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr",
+          gap: "30px",
+          width: "100%",
+          maxWidth: "1300px",
         }}
       >
-        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-          Twój profil
-        </h2>
+        {/* LEWA STRONA – OFERTY */}
+        <div
+          style={{
+            background: "#ffffff",
+            borderRadius: "20px",
+            padding: "24px",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h2
+            style={{
+              textAlign: "center",
+              marginBottom: "18px",
+              color: "#007bff",
+              fontWeight: 800,
+            }}
+          >
+            Twoje oferty
+          </h2>
 
-        {user && (
-          <>
-            <div style={{ textAlign: "center", marginBottom: "20px" }}>
-              <img
-                src={user.avatarUrl || "/logo.png"}
-                alt="avatar"
+          {/* 🔹 Filtry */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+              justifyContent: "center",
+              marginBottom: "20px",
+              background: "#f9fafc",
+              padding: "14px",
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <input
+              type="text"
+              placeholder="🔍 Tytuł oferty"
+              value={filterTitle}
+              onChange={(e) => setFilterTitle(e.target.value)}
+              style={{
+                flex: "1 1 220px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1px solid #ccc",
+                background: "#fff",
+                fontSize: "0.95rem",
+                outline: "none",
+              }}
+            />
+
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              style={{
+                flex: "1 1 200px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1px solid #ccc",
+                background: "#fff",
+                fontSize: "0.95rem",
+                outline: "none",
+              }}
+            >
+              <option value="">Wszystkie kategorie</option>
+              <option value="Pomoc">Pomoc</option>
+              <option value="Kuchnia">Kuchnia</option>
+              <option value="Ogród">Ogród</option>
+              <option value="Prace dorywcze">Prace dorywcze</option>
+              <option value="Transport">Transport</option>
+              <option value="Inne">Inne</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="📍 Miejsce"
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              style={{
+                flex: "1 1 200px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1px solid #ccc",
+                background: "#fff",
+                fontSize: "0.95rem",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          {/* 🔹 Lista ofert */}
+          {loadingOffers ? (
+            <p style={{ textAlign: "center" }}>Ładowanie ofert...</p>
+          ) : filteredOffers.length === 0 ? (
+            <p style={{ textAlign: "center" }}>Nie znaleziono ofert.</p>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: "20px",
+                justifyItems: "center",
+              }}
+            >
+              {filteredOffers.map((offer) => (
+                <OfferCard
+                  key={offer.id}
+                  id={offer.id}
+                  title={offer.title}
+                  localisation={offer.localisation}
+                  price={offer.prize}
+                  category={offer.category}
+                  images={
+                    offer.images && offer.images.length > 0
+                      ? offer.images.map((img) => img.url)
+                      : ["/logo.png"]
+                  }
+                  rating={offer.avgRounded ?? undefined}
+                  ratingsCount={offer.ratingsCount ?? 0}
+                  onClick={() => setSelectedOffer(offer)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* 🔹 Modal szczegółów oferty */}
+          {selectedOffer && (
+            <OfferModal
+              offer={selectedOffer}
+              onClose={() => setSelectedOffer(null)}
+            >
+              <div
                 style={{
-                  width: "120px",
-                  height: "120px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "2px solid #ddd",
-                  marginBottom: "10px",
+                  marginTop: "20px",
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "15px",
                 }}
-              />
+              >
+                <button
+                  style={{
+                    background: "linear-gradient(90deg, #007bff, #00bfff)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "10px",
+                    padding: "10px 20px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
+                  }}
+                  onClick={() => navigate(`/offers/edit/${selectedOffer.id}`)}
+                >
+                  ✏️ Edytuj
+                </button>
+                <button
+                  style={{
+                    background: "linear-gradient(90deg, #ff4b5c, #dc3545)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "10px",
+                    padding: "10px 20px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(220,53,69,0.3)",
+                  }}
+                  onClick={() => handleDeleteOffer(selectedOffer.id)}
+                >
+                  ❌ Usuń
+                </button>
+              </div>
+            </OfferModal>
+          )}
+        </div>
+
+        {/* PRAWA STRONA – PROFIL */}
+        <div
+          style={{
+            background: "#ffffff",
+            borderRadius: "20px",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+            padding: "24px",
+            height: "fit-content",
+          }}
+        >
+          <h2
+            style={{
+              textAlign: "center",
+              marginBottom: "20px",
+              color: "#007bff",
+              fontWeight: 800,
+            }}
+          >
+            Twój profil
+          </h2>
+
+          {user && (
+            <>
+              <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                <img
+                  src={user.avatarUrl || "/logo.png"}
+                  alt="avatar"
+                  style={{
+                    width: "120px",
+                    height: "120px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "3px solid #e9ecef",
+                    marginBottom: "12px",
+                  }}
+                />
+
+                <div>
+                  <label
+                    htmlFor="avatarUpload"
+                    style={{
+                      display: "inline-block",
+                      background: "linear-gradient(90deg, #007bff, #00bfff)",
+                      color: "white",
+                      padding: "10px 16px",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
+                    }}
+                  >
+                    {uploading ? "Wysyłanie..." : "Zmień zdjęcie"}
+                  </label>
+                  <input
+                    id="avatarUpload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    style={{ display: "none" }}
+                  />
+                </div>
+
+                <h3 style={{ marginTop: "12px", color: "#333" }}>
+                  {user.username}
+                </h3>
+              </div>
 
               <div>
                 <label
-                  htmlFor="avatarUpload"
-                  style={{
-                    display: "inline-block",
-                    backgroundColor: "#007bff",
-                    color: "white",
-                    padding: "8px 16px",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                    marginBottom: "10px",
-                  }}
+                  style={{ fontWeight: 600, display: "block", marginBottom: 6 }}
                 >
-                  {uploading ? "Wysyłanie..." : "Zmień zdjęcie"}
+                  Email:
                 </label>
                 <input
-                  id="avatarUpload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  style={{ display: "none" }}
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  style={{
+                    width: "100%",
+                    marginBottom: "12px",
+                    padding: "12px 14px",
+                    borderRadius: "10px",
+                    border: "1px solid #ccc",
+                    background: "#f9f9f9",
+                    color: "#333",
+                    outline: "none",
+                    fontSize: "0.95rem",
+                  }}
                 />
+                <button
+                  onClick={handleEmailChange}
+                  style={{
+                    width: "100%",
+                    background: "linear-gradient(90deg, #00b85c, #28a745)",
+                    color: "white",
+                    padding: "12px",
+                    border: "none",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(40,167,69,0.3)",
+                  }}
+                >
+                  Zapisz email
+                </button>
               </div>
 
-              <h3>{user.username}</h3>
-            </div>
+              <div style={{ marginTop: "14px" }}>
+                <button
+                  onClick={() => navigate("/change-password")}
+                  style={{
+                    width: "100%",
+                    background: "linear-gradient(90deg, #007bff, #00bfff)",
+                    color: "white",
+                    padding: "12px",
+                    border: "none",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
+                  }}
+                >
+                  Zmień hasło
+                </button>
+              </div>
 
-            <div>
-              <label>Email:</label>
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                style={{
-                  width: "100%",
-                  marginBottom: "10px",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                }}
-              />
-              <button
-                onClick={handleEmailChange}
-                style={{
-                  width: "100%",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  padding: "10px",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                Zapisz email
-              </button>
-            </div>
-
-            <div style={{ marginTop: "20px" }}>
-              <button
-                onClick={() => navigate("/change-password")}
-                style={{
-                  width: "100%",
-                  backgroundColor: "#007bff",
-                  color: "white",
-                  padding: "10px",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                Zmień hasło
-              </button>
-            </div>
-
-            {message && (
-              <p
-                style={{
-                  marginTop: "15px",
-                  color: message.includes("✅") ? "green" : "red",
-                  textAlign: "center",
-                }}
-              >
-                {message}
-              </p>
-            )}
-          </>
-        )}
+              {message && (
+                <p
+                  style={{
+                    marginTop: "15px",
+                    color: message.includes("✅") ? "#28a745" : "#dc3545",
+                    textAlign: "center",
+                    fontWeight: 600,
+                  }}
+                >
+                  {message}
+                </p>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,62 +1,67 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
+import HomePage from "./pages/HomePage"; // 🔹 to będzie twoja strona główna z formularzem
+import Home from "./pages/Home"; // 🔹 a to twoja strona z ofertami
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AddOffer from "./pages/AddOffer";
 import ProfilePage from "./pages/ProfilePage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import ReviewPage from "./pages/ReviewPage";
-import Terms from "./components/Terms"; // ✅ nowa strona regulaminu
+import Terms from "./components/Terms";
 import { useState } from "react";
 import MessagesPage from "./pages/MessagesPage";
 import AdminPage from "./pages/AdminPage";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem("token") // jeśli token istnieje = zalogowany
+    !!localStorage.getItem("token")
   );
 
   return (
     <div>
-      {/* ✅ Pasek nawigacji widoczny wszędzie */}
+      {/* Pasek nawigacji */}
       <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
 
-      {/* ✅ Wszystkie trasy aplikacji */}
       <Routes>
-        {/* Strona główna */}
-        <Route path="/" element={<Home />} />
+        {/* 🔹 Strona główna (formularz kontaktowy i opis projektu) */}
+        <Route path="/" element={<HomePage />} />
 
-        {/* Recenzje ofert */}
+        {/* 🔹 Oferty — osobna podstrona */}
+        <Route path="/offers" element={<Home />} />
+
+        {/* 🔹 Recenzje ofert */}
         <Route path="/reviews/:offerId" element={<ReviewPage />} />
 
-        {/* Logowanie i rejestracja */}
+        {/* 🔹 Logowanie i rejestracja */}
         <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ✅ Nowa trasa: regulamin */}
+        {/* 🔹 Regulamin */}
         <Route path="/terms" element={<Terms />} />
 
-        {/* 🔹 Tylko zalogowani mogą dodawać ofertę */}
+        {/* 🔹 Dodawanie oferty — tylko dla zalogowanych */}
         <Route
           path="/add-offer"
           element={isLoggedIn ? <AddOffer /> : <Navigate to="/login" replace />}
         />
 
-        {/* 🔹 Tylko zalogowani mogą zobaczyć profil */}
+        {/* 🔹 Profil użytkownika */}
         <Route
           path="/profile"
           element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" replace />}
         />
+
+        {/* 🔹 Panel admina */}
         <Route path="/admin" element={<AdminPage />} />
 
-<Route
-  path="/messages"
-  element={isLoggedIn ? <MessagesPage /> : <Navigate to="/login" replace />}
-/>
+        {/* 🔹 Wiadomości — tylko dla zalogowanych */}
+        <Route
+          path="/messages"
+          element={isLoggedIn ? <MessagesPage /> : <Navigate to="/login" replace />}
+        />
 
-
-        {/* 🔹 Zmiana hasła też tylko po zalogowaniu */}
+        {/* 🔹 Zmiana hasła */}
         <Route
           path="/change-password"
           element={
@@ -64,7 +69,7 @@ export default function App() {
           }
         />
 
-        {/* Fallback: przekierowanie na stronę główną */}
+        {/* 🔹 Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

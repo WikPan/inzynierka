@@ -7,6 +7,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { MessagesModule } from './messages/messages.module';
 import { GeoModule } from './geo/geo.module';
 import { AdminModule } from './admin/admin.module';
+import { ContactController } from './contact/contact.controller';
 
 @Module({
   imports: [
@@ -31,5 +32,6 @@ import { AdminModule } from './admin/admin.module';
     GeoModule,
     AdminModule,
   ],
+  controllers: [ContactController], // 🔹 dodany kontroler do obsługi formularza kontaktowego
 })
 export class AppModule {}

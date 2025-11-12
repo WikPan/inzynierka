@@ -10,7 +10,6 @@ export default function Navbar({
 }) {
   const navigate = useNavigate();
 
-  // Pobierz dane użytkownika z localStorage
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
   const accountType = user?.accountType?.toLowerCase();
@@ -25,15 +24,18 @@ export default function Navbar({
   return (
     <nav
       style={{
-        backgroundColor: "#ffffff",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-        padding: "0.8rem 2rem",
+        background:
+          "linear-gradient(90deg, rgba(0,123,255,0.9), rgba(0,191,255,0.85))",
+        color: "#fff",
+        padding: "0.9rem 2rem",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
         position: "sticky",
         top: 0,
-        zIndex: 100,
+        zIndex: 1000,
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
       }}
     >
       {/* 🔹 Logo */}
@@ -41,20 +43,30 @@ export default function Navbar({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "12px",
+          gap: "10px",
           cursor: "pointer",
         }}
         onClick={() => navigate("/")}
       >
         <img
           src={logo}
-          alt="Logo"
+          alt="Oofferto logo"
           style={{
-            width: "55px",
-            height: "55px",
+            width: "52px",
+            height: "52px",
             objectFit: "contain",
           }}
         />
+        <span
+          style={{
+            fontSize: "1.4rem",
+            fontWeight: 700,
+            color: "white",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Oofferto
+        </span>
       </div>
 
       {/* 🔹 Linki */}
@@ -62,7 +74,7 @@ export default function Navbar({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "2rem",
+          gap: "1.8rem",
           fontSize: "1rem",
           fontWeight: 500,
         }}
@@ -70,10 +82,12 @@ export default function Navbar({
         <Link
           to="/"
           style={{
-            color: "#333",
+            color: "white",
             textDecoration: "none",
-            transition: "color 0.2s",
+            transition: "color 0.2s ease",
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
         >
           Strona główna
         </Link>
@@ -81,10 +95,12 @@ export default function Navbar({
         <Link
           to="/offers"
           style={{
-            color: "#333",
+            color: "white",
             textDecoration: "none",
-            transition: "color 0.2s",
+            transition: "color 0.2s ease",
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
         >
           Oferty
         </Link>
@@ -92,34 +108,57 @@ export default function Navbar({
         {isLoggedIn ? (
           <>
             {accountType === "admin" ? (
-              <Link
-                to="/admin"
-                style={{
-                  color: "#333",
-                  textDecoration: "none",
-                  transition: "color 0.2s",
-                }}
-              >
-                👑 Panel admina
-              </Link>
-            ) : (
               <>
                 <Link
-                  to="/add-offer"
+                  to="/admin"
                   style={{
-                    color: "#333",
+                    color: "white",
                     textDecoration: "none",
+                    transition: "color 0.2s ease",
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
                 >
-                  Dodaj ofertę
+                  👑 Panel admina
                 </Link>
 
                 <Link
                   to="/messages"
                   style={{
-                    color: "#333",
+                    color: "white",
                     textDecoration: "none",
+                    transition: "color 0.2s ease",
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+                >
+                  💬 Wiadomości
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/add-offer"
+                  style={{
+                    color: "white",
+                    textDecoration: "none",
+                    transition: "color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+                >
+                  ➕ Dodaj ofertę
+                </Link>
+
+                <Link
+                  to="/messages"
+                  style={{
+                    color: "white",
+                    textDecoration: "none",
+                    transition: "color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
                 >
                   💬 Wiadomości
                 </Link>
@@ -127,11 +166,14 @@ export default function Navbar({
                 <Link
                   to="/profile"
                   style={{
-                    color: "#333",
+                    color: "white",
                     textDecoration: "none",
+                    transition: "color 0.2s ease",
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
                 >
-                  Profil
+                  👤 Profil
                 </Link>
               </>
             )}
@@ -139,15 +181,20 @@ export default function Navbar({
             <button
               onClick={handleLogout}
               style={{
-                backgroundColor: "#007bff",
-                color: "#fff",
+                background: "linear-gradient(90deg, #007bff, #00bfff)",
+                color: "white",
                 border: "none",
-                borderRadius: "8px",
-                padding: "8px 16px",
+                borderRadius: "10px",
+                padding: "8px 18px",
                 fontWeight: 600,
                 cursor: "pointer",
-                transition: "background-color 0.2s",
+                boxShadow: "0 4px 10px rgba(0,123,255,0.4)",
+                transition: "all 0.2s ease",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.filter = "brightness(1.1)")
+              }
+              onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
             >
               Wyloguj
             </button>
@@ -157,13 +204,19 @@ export default function Navbar({
             <Link
               to="/login"
               style={{
-                backgroundColor: "#007bff",
-                color: "#fff",
-                borderRadius: "8px",
+                background: "linear-gradient(90deg, #007bff, #00bfff)",
+                color: "white",
+                borderRadius: "10px",
                 padding: "8px 16px",
                 textDecoration: "none",
                 fontWeight: 600,
+                boxShadow: "0 4px 10px rgba(0,123,255,0.4)",
+                transition: "all 0.2s ease",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.filter = "brightness(1.1)")
+              }
+              onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
             >
               Zaloguj się
             </Link>
@@ -171,12 +224,21 @@ export default function Navbar({
             <Link
               to="/register"
               style={{
-                border: "1px solid #007bff",
-                color: "#007bff",
-                borderRadius: "8px",
+                border: "2px solid white",
+                color: "white",
+                borderRadius: "10px",
                 padding: "8px 16px",
                 textDecoration: "none",
                 fontWeight: 600,
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "white";
+                e.currentTarget.style.color = "#007bff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "white";
               }}
             >
               Zarejestruj się

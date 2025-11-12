@@ -14,7 +14,6 @@ type OfferCardProps = {
 };
 
 export default function OfferCard({
-  id,
   title,
   localisation,
   price,
@@ -38,11 +37,9 @@ export default function OfferCard({
     );
   };
 
-  // 🔹 Ujednolicenie typu ceny (string → number)
   const numericPrice =
     typeof price === "string" ? parseFloat(price) : price;
 
-  // 🔹 Ustal źródło obrazka (jeśli brak, użyj logo)
   const hasImages = images && images.length > 0;
   const displayImage = hasImages ? images[currentIndex] : logoPlaceholder;
 
@@ -50,27 +47,31 @@ export default function OfferCard({
     <div
       onClick={onClick}
       style={{
-        width: "250px",
-        borderRadius: "16px",
+        width: "260px",
+        borderRadius: "18px",
         overflow: "hidden",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-        backgroundColor: "#fff",
+        background: "#ffffff",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
         cursor: "pointer",
-        transition: "transform 0.2s ease",
+        transition: "all 0.25s ease",
       }}
-      onMouseEnter={(e) =>
-        ((e.currentTarget.style.transform = "scale(1.02)"))
-      }
-      onMouseLeave={(e) =>
-        ((e.currentTarget.style.transform = "scale(1.0)"))
-      }
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-5px)";
+        e.currentTarget.style.boxShadow =
+          "0 6px 18px rgba(0,123,255,0.25)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow =
+          "0 4px 12px rgba(0,0,0,0.08)";
+      }}
     >
-      {/* 🔹 Sekcja obrazka */}
+      {/* 🖼️ Obrazek */}
       <div
         style={{
           position: "relative",
           height: "180px",
-          backgroundColor: "#f0f0f0",
+          backgroundColor: "#f0f4ff",
         }}
       >
         <img
@@ -80,13 +81,12 @@ export default function OfferCard({
             width: "100%",
             height: "100%",
             objectFit: hasImages ? "cover" : "contain",
-            backgroundColor: hasImages ? "#f0f0f0" : "#fff",
-            padding: hasImages ? "0" : "20px",
-            opacity: hasImages ? 1 : 0.85,
+            backgroundColor: "#f9fbff",
+            padding: hasImages ? "0" : "25px",
           }}
         />
 
-        {/* Strzałki tylko jeśli więcej niż 1 zdjęcie */}
+        {/* 🔁 Strzałki przewijania zdjęć */}
         {hasImages && images.length > 1 && (
           <>
             <button
@@ -94,16 +94,24 @@ export default function OfferCard({
               style={{
                 position: "absolute",
                 top: "50%",
-                left: "8px",
+                left: "10px",
                 transform: "translateY(-50%)",
                 background: "rgba(255,255,255,0.6)",
                 border: "none",
                 borderRadius: "50%",
-                width: "30px",
-                height: "30px",
+                width: "32px",
+                height: "32px",
                 cursor: "pointer",
                 fontSize: "18px",
+                color: "#333",
+                transition: "background 0.2s",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.9)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.6)")
+              }
             >
               ‹
             </button>
@@ -112,16 +120,24 @@ export default function OfferCard({
               style={{
                 position: "absolute",
                 top: "50%",
-                right: "8px",
+                right: "10px",
                 transform: "translateY(-50%)",
                 background: "rgba(255,255,255,0.6)",
                 border: "none",
                 borderRadius: "50%",
-                width: "30px",
-                height: "30px",
+                width: "32px",
+                height: "32px",
                 cursor: "pointer",
                 fontSize: "18px",
+                color: "#333",
+                transition: "background 0.2s",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.9)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.6)")
+              }
             >
               ›
             </button>
@@ -129,21 +145,21 @@ export default function OfferCard({
         )}
       </div>
 
-      {/* 🔹 Sekcja info */}
+      {/* 📋 Sekcja informacji */}
       <div
         style={{
-          padding: "10px 12px",
+          padding: "14px 16px",
           display: "flex",
           flexDirection: "column",
-          gap: "4px",
+          gap: "6px",
         }}
       >
         <h3
           style={{
-            fontSize: "1.1rem",
+            fontSize: "1.05rem",
             margin: 0,
-            color: "#333",
-            fontWeight: 600,
+            color: "#222",
+            fontWeight: 700,
           }}
         >
           {title}
@@ -153,45 +169,50 @@ export default function OfferCard({
         <span
           style={{
             alignSelf: "flex-start",
-            backgroundColor: "#e3f2fd",
+            background:
+              "linear-gradient(90deg, #e3f2fd, #f0f9ff)",
             color: "#007bff",
             fontSize: "0.8rem",
-            fontWeight: 500,
-            padding: "3px 8px",
-            borderRadius: "6px",
-            marginBottom: "4px",
+            fontWeight: 600,
+            padding: "4px 10px",
+            borderRadius: "8px",
           }}
         >
           {category}
         </span>
 
+        {/* 📍 Lokalizacja */}
         <p
           style={{
             fontSize: "0.9rem",
-            color: "#666",
+            color: "#555",
             margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
           }}
         >
           📍 {localisation}
         </p>
 
-        {/* ⭐ Ocena + liczba recenzji */}
+        {/* ⭐ Ocena i 💰 Cena */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginTop: "6px",
+            marginTop: "8px",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ color: "#ffa500", fontSize: "0.95rem" }}>
+          {/* ⭐ Ocena */}
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ color: "#f5b301", fontSize: "0.95rem" }}>
               ⭐ {rating ? rating.toFixed(1) : "—"}
             </span>
-            {ratingsCount !== undefined && ratingsCount > 0 && (
+            {ratingsCount && ratingsCount > 0 && (
               <span
                 style={{
-                  color: "#999",
+                  color: "#777",
                   fontSize: "0.8rem",
                 }}
               >
@@ -206,7 +227,7 @@ export default function OfferCard({
               style={{
                 color: "#2e8b57",
                 fontSize: "1rem",
-                fontWeight: 600,
+                fontWeight: 700,
                 display: "flex",
                 alignItems: "center",
                 gap: "4px",
@@ -219,7 +240,7 @@ export default function OfferCard({
               style={{
                 color: "#007bff",
                 fontSize: "1rem",
-                fontWeight: 600,
+                fontWeight: 700,
               }}
             >
               {numericPrice} zł

@@ -1,4 +1,3 @@
-// src/admin/admin.controller.ts
 import {
   Controller,
   Get,
@@ -16,13 +15,25 @@ import { AuthGuard } from '../auth/auth.guard';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  // 👥 Lista użytkowników z raportami
+  // 📋 Wszyscy użytkownicy
+  @Get('users')
+  async getAllUsers() {
+    return this.adminService.getAllUsers();
+  }
+
+  // 📋 Wszystkie oferty
+  @Get('offers')
+  async getAllOffers() {
+    return this.adminService.getAllOffers();
+  }
+
+  // 👥 Zgłoszeni użytkownicy
   @Get('reported-users')
   async getReportedUsers() {
     return this.adminService.getReportedUsers();
   }
 
-  // 📦 Lista ofert z raportami
+  // 📦 Zgłoszone oferty
   @Get('reported-offers')
   async getReportedOffers() {
     return this.adminService.getReportedOffers();
@@ -31,28 +42,36 @@ export class AdminController {
   // 🚫 Zablokuj użytkownika
   @Patch('users/:id/block')
   async blockUser(@Param('id') id: string, @Request() req) {
-    const adminId = req.user.id; // 👈 z tokena JWT
-    return this.adminService.blockUser(id, adminId);
+    return this.adminService.blockUser(id, req.user.id);
+  }
+
+  // 🔓 Odblokuj użytkownika
+  @Patch('users/:id/unblock')
+  async unblockUser(@Param('id') id: string) {
+    return this.adminService.unblockUser(id);
   }
 
   // ❌ Usuń użytkownika
   @Delete('users/:id')
   async deleteUser(@Param('id') id: string, @Request() req) {
-    const adminId = req.user.id;
-    return this.adminService.deleteUser(id, adminId);
+    return this.adminService.deleteUser(id, req.user.id);
   }
 
   // 🚫 Zablokuj ofertę
   @Patch('offers/:id/block')
   async blockOffer(@Param('id') id: string, @Request() req) {
-    const adminId = req.user.id;
-    return this.adminService.blockOffer(id, adminId);
+    return this.adminService.blockOffer(id, req.user.id);
+  }
+
+  // 🔓 Odblokuj ofertę
+  @Patch('offers/:id/unblock')
+  async unblockOffer(@Param('id') id: string, @Request() req) {
+    return this.adminService.unblockOffer(id, req.user.id);
   }
 
   // ❌ Usuń ofertę
   @Delete('offers/:id')
   async deleteOffer(@Param('id') id: string, @Request() req) {
-    const adminId = req.user.id;
-    return this.adminService.deleteOffer(id, adminId);
+    return this.adminService.deleteOffer(id, req.user.id);
   }
 }

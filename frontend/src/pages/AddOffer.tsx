@@ -15,15 +15,11 @@ export default function AddOffer() {
   const [description, setDescription] = useState("");
   const [prize, setPrize] = useState("");
   const [category, setCategory] = useState("");
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [localisation, setLocalisation] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [useLocation, setUseLocation] = useState(false);
-  const [titleError, setTitleError] = useState(false);
-  const [descError, setDescError] = useState(false);
   const token = localStorage.getItem("token");
 
   const MAX_TITLE = 60;
@@ -60,12 +56,6 @@ export default function AddOffer() {
     setLongitude(suggestion.lon);
   };
 
-  const inputProps = {
-    placeholder: "Podaj miejscowość (np. Gliwice, Śląskie)",
-    value: localisation,
-    onChange: (_: any, { newValue }: any) => setLocalisation(newValue),
-  };
-
   const handleUseMyLocation = async () => {
     if (!navigator.geolocation) return alert("Brak wsparcia geolokalizacji.");
 
@@ -94,26 +84,10 @@ export default function AddOffer() {
     );
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length + selectedImages.length > 3) {
-      alert("Maksymalnie 3 zdjęcia!");
-      return;
-    }
-    const newFiles = [...selectedImages, ...files].slice(0, 3);
-    setSelectedImages(newFiles);
-    setPreviewUrls(newFiles.map((f) => URL.createObjectURL(f)));
-  };
-
-  const removeImage = (i: number) => {
-    setSelectedImages(selectedImages.filter((_, idx) => idx !== i));
-    setPreviewUrls(previewUrls.filter((_, idx) => idx !== i));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.length > MAX_TITLE) return setTitleError(true);
-    if (description.length > MAX_DESC) return setDescError(true);
+    if (title.length > MAX_TITLE) return alert("Tytuł za długi!");
+    if (description.length > MAX_DESC) return alert("Opis za długi!");
 
     try {
       if (!token) throw new Error("Brak tokena (zaloguj się ponownie)");
@@ -128,25 +102,9 @@ export default function AddOffer() {
         longitude,
       };
 
-      const offerRes = await axios.post("http://localhost:3000/offers", body, {
+      await axios.post("http://localhost:3000/offers", body, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      const offerId = offerRes.data.id;
-      if (selectedImages.length > 0) {
-        const formData = new FormData();
-        selectedImages.forEach((f) => formData.append("files", f));
-        await axios.post(
-          `http://localhost:3000/offers/${offerId}/upload-images`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-      }
 
       alert("✅ Oferta dodana pomyślnie!");
       setTitle("");
@@ -154,8 +112,6 @@ export default function AddOffer() {
       setPrize("");
       setCategory("");
       setLocalisation("");
-      setSelectedImages([]);
-      setPreviewUrls([]);
     } catch (err) {
       console.error(err);
       alert("❌ Nie udało się dodać oferty.");
@@ -165,366 +121,177 @@ export default function AddOffer() {
   return (
     <div
       style={{
-        maxWidth: "650px",
-        margin: "60px auto",
-        backgroundColor: "#fff",
-        padding: "40px 50px",
-        borderRadius: "20px",
-        boxShadow: "0 8px 25px rgba(0,0,0,0.08)",
+        minHeight: "100vh",
+        background: "linear-gradient(180deg, #f9fbff, #e8f2ff)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "60px 20px",
       }}
     >
-      <h2
+      <div
         style={{
-          textAlign: "center",
-          color: "#007bff",
-          fontWeight: "bold",
-          marginBottom: "25px",
-          fontSize: "1.8rem",
+          width: "100%",
+          maxWidth: "700px",
+          background: "#ffffff",
+          borderRadius: "20px",
+          padding: "40px 50px",
+          boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
         }}
       >
-        ✨ Dodaj nową ofertę
-      </h2>
+        <h2
+          style={{
+            textAlign: "center",
+            color: "#007bff",
+            fontWeight: 700,
+            marginBottom: "30px",
+            fontSize: "1.9rem",
+          }}
+        >
+          ✨ Dodaj nową ofertę
+        </h2>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: "18px" }}
-      >
-        {/* Tytuł */}
-        <div style={{ position: "relative" }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "18px" }}
+        >
           <input
             type="text"
             placeholder="Tytuł oferty"
             value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              setTitleError(false);
-            }}
-            maxLength={MAX_TITLE}
+            onChange={(e) => setTitle(e.target.value)}
             required
+            maxLength={MAX_TITLE}
             style={{
               width: "100%",
-              padding: "12px",
+              padding: "12px 14px",
               borderRadius: "10px",
               border: "1px solid #ccc",
-              fontSize: "1rem",
-              transition: "border-color 0.2s",
+              background: "#f9f9f9",
+              color: "#333",
+              fontSize: "0.95rem",
+              outline: "none",
             }}
           />
-          <small style={{ color: title.length >= MAX_TITLE ? "red" : "#666" }}>
-            {title.length}/{MAX_TITLE}
-          </small>
-          {titleError && (
-            <div style={{ color: "red", fontSize: "0.9rem" }}>
-              Przekroczono maksymalną długość tytułu.
-            </div>
-          )}
-        </div>
-
-        {/* Opis */}
-        <div style={{ position: "relative" }}>
           <textarea
             placeholder="Opis oferty..."
             value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              setDescError(false);
-            }}
-            maxLength={MAX_DESC}
+            onChange={(e) => setDescription(e.target.value)}
             required
+            maxLength={MAX_DESC}
             style={{
               width: "100%",
+              padding: "12px 14px",
+              borderRadius: "10px",
+              border: "1px solid #ccc",
+              background: "#f9f9f9",
+              color: "#333",
+              minHeight: "120px",
+              resize: "none",
+              outline: "none",
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Cena (zł)"
+            value={prize}
+            onChange={(e) => setPrize(e.target.value.replace(",", "."))}
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              borderRadius: "10px",
+              border: "1px solid #ccc",
+              background: "#f9f9f9",
+              color: "#333",
+              outline: "none",
+            }}
+          />
+
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+            style={{
               padding: "12px",
               borderRadius: "10px",
               border: "1px solid #ccc",
-              fontSize: "1rem",
-              resize: "none",
-              minHeight: "100px",
+              background: "#f9f9f9",
+              color: "#333",
+              outline: "none",
+            }}
+          >
+            <option value="">Wybierz kategorię</option>
+            <option value="Pomoc">Pomoc</option>
+            <option value="Kuchnia">Kuchnia</option>
+            <option value="Ogród">Ogród</option>
+            <option value="Prace dorywcze">Prace dorywcze</option>
+            <option value="Transport">Transport</option>
+            <option value="Inne">Inne</option>
+          </select>
+
+          <Autosuggest
+            suggestions={suggestions}
+            onSuggestionsFetchRequested={onSuggestionsFetchRequested}
+            onSuggestionsClearRequested={() => setSuggestions([])}
+            onSuggestionSelected={onSuggestionSelected}
+            getSuggestionValue={(s) => s.label}
+            renderSuggestion={(s) => (
+              <div style={{ padding: "8px 12px", color: "#333" }}>{s.label}</div>
+            )}
+            inputProps={{
+              placeholder: "📍 Podaj miejscowość",
+              value: localisation,
+              onChange: (_: any, { newValue }: any) => setLocalisation(newValue),
+              style: {
+                padding: "12px",
+                borderRadius: "10px",
+                border: "1px solid #ccc",
+                background: "#f9f9f9",
+                color: "#333",
+                width: "100%",
+                outline: "none",
+              },
             }}
           />
-          <small style={{ color: description.length >= MAX_DESC ? "red" : "#666" }}>
-            {description.length}/{MAX_DESC}
-          </small>
-          {descError && (
-            <div style={{ color: "red", fontSize: "0.9rem" }}>
-              Przekroczono maksymalną długość opisu.
-            </div>
-          )}
-        </div>
 
-{/* Cena */}
-<div style={{ position: "relative" }}>
-  <input
-    type="text" // <-- zmiana na text, ale walidujemy tylko cyfry!
-    placeholder="Cena (zł)"
-    value={prize}
-    onChange={(e) => {
-      const val = e.target.value;
-      // Pozwalamy tylko cyfry i ewentualnie kropkę
-      if (/^[0-9]*([.,][0-9]*)?$/.test(val) || val === "") {
-        setPrize(val.replace(",", ".")); // zamieniamy przecinek na kropkę
-      }
-    }}
-    required
-    inputMode="decimal" // pokazuje klawiaturę numeryczną na telefonach
-    style={{
-      width: "100%",
-      padding: "12px",
-      borderRadius: "10px",
-      border: "1px solid #ccc",
-      fontSize: "1rem",
-      outline: "none",
-      transition: "border-color 0.2s",
-    }}
-  />
-  <small style={{ color: "#555", marginTop: "4px", display: "block" }}>
-    💡 Ustawienie ceny na <b>0 zł</b> oznacza, że oferta jest{" "}
-    <b>bezpłatna</b>.
-  </small>
-</div>
-
-
-        {/* Kategoria */}
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          required
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid #ccc",
-            backgroundColor: "#f9f9f9",
-            fontSize: "1rem",
-          }}
-        >
-          <option value="">Wybierz kategorię</option>
-          <option value="Pomoc">Pomoc</option>
-          <option value="Kuchnia">Kuchnia</option>
-          <option value="Ogród">Ogród</option>
-          <option value="Prace dorywcze">Prace dorywcze</option>
-          <option value="Transport">Transport</option>
-          <option value="Inne">Inne</option>
-        </select>
-
-   {/* 📸 Zdjęcia */}
-<div
-  style={{
-    backgroundColor: "#f9fafc",
-    padding: "16px",
-    borderRadius: "12px",
-    border: "1px solid #e0e0e0",
-  }}
->
-  <label
-    style={{
-      fontWeight: 600,
-      display: "block",
-      marginBottom: "10px",
-      color: "#333",
-    }}
-  >
-    📸 Zdjęcia (max 3)
-  </label>
-
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      flexWrap: "wrap",
-    }}
-  >
-    <span style={{ color: "#666", fontSize: "0.9rem" }}>
-      {selectedImages.length > 0
-        ? `${selectedImages.length} wybrane`
-        : "Nie wybrano plików"}
-    </span>
-
-    <label
-      htmlFor="imageUpload"
-      style={{
-        backgroundColor: "#007bff",
-        color: "white",
-        padding: "8px 16px",
-        borderRadius: "8px",
-        cursor: "pointer",
-        fontSize: "0.95rem",
-        fontWeight: 500,
-        transition: "background-color 0.2s",
-      }}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.backgroundColor = "#0056b3")
-      }
-      onMouseLeave={(e) =>
-        (e.currentTarget.style.backgroundColor = "#007bff")
-      }
-    >
-      Wybierz zdjęcia
-    </label>
-    <input
-      id="imageUpload"
-      type="file"
-      accept="image/*"
-      multiple
-      onChange={handleImageChange}
-      style={{ display: "none" }}
-    />
-  </div>
-
-  {/* Podglądy zdjęć */}
-  {previewUrls.length > 0 && (
-    <div
-      style={{
-        display: "flex",
-        gap: "10px",
-        marginTop: "12px",
-        flexWrap: "wrap",
-      }}
-    >
-      {previewUrls.map((url, i) => (
-        <div key={i} style={{ position: "relative" }}>
-          <img
-            src={url}
-            alt={`preview-${i}`}
-            style={{
-              width: "100px",
-              height: "100px",
-              objectFit: "cover",
-              borderRadius: "10px",
-              border: "1px solid #ccc",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-            }}
-          />
           <button
             type="button"
-            onClick={() => removeImage(i)}
+            onClick={handleUseMyLocation}
             style={{
-              position: "absolute",
-              top: "-5px",
-              right: "-5px",
-              background: "#ff4444",
+              background: "linear-gradient(90deg, #007bff, #00bfff)",
               color: "white",
               border: "none",
-              borderRadius: "50%",
-              width: "22px",
-              height: "22px",
-              cursor: "pointer",
-            }}
-          >
-            ✕
-          </button>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-
-
-        {/* 📍 Lokalizacja */}
-        <div
-          style={{
-            backgroundColor: "#f9fafc",
-            padding: "16px",
-            borderRadius: "12px",
-            border: "1px solid #e0e0e0",
-          }}
-        >
-          <label
-            style={{
+              borderRadius: "10px",
+              padding: "14px",
               fontWeight: 600,
-              display: "block",
-              marginBottom: "8px",
-              color: "#333",
+              fontSize: "1rem",
+              cursor: "pointer",
+              transition: "all 0.25s",
+              boxShadow: "0 4px 12px rgba(0,123,255,0.4)",
             }}
           >
-            📍 Lokalizacja
-          </label>
+            {useLocation ? "⏳ Pobieranie..." : "📌 Użyj mojej lokalizacji"}
+          </button>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <Autosuggest
-              suggestions={suggestions}
-              onSuggestionsFetchRequested={onSuggestionsFetchRequested}
-              onSuggestionsClearRequested={onSuggestionsClearRequested}
-              onSuggestionSelected={onSuggestionSelected}
-              getSuggestionValue={(s) => s.label}
-              renderSuggestion={(s) => (
-                <div
-                  style={{
-                    padding: "8px 10px",
-                    cursor: "pointer",
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  {s.label}
-                </div>
-              )}
-              inputProps={{
-                placeholder: "Podaj miejscowość (np. Gliwice, Śląskie)",
-                value: localisation,
-                onChange: (_: any, { newValue }: any) =>
-                  setLocalisation(newValue),
-                style: {
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid #ccc",
-                  fontSize: "1rem",
-                  width: "100%",
-                },
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={handleUseMyLocation}
-              disabled={useLocation}
-              style={{
-                backgroundColor: "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "10px",
-                padding: "10px 16px",
-                fontSize: "0.95rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#0056b3")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#007bff")
-              }
-            >
-              {useLocation ? "⏳ Pobieranie..." : "📌 Użyj mojej lokalizacji"}
-            </button>
-          </div>
-        </div>
-
-        {/* 🟦 Przycisk końcowy */}
-        <button
-          type="submit"
-          style={{
-            backgroundColor: "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "10px",
-            padding: "14px",
-            fontSize: "1.1rem",
-            fontWeight: "bold",
-            cursor: "pointer",
-            marginTop: "10px",
-            transition: "background-color 0.25s",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.backgroundColor = "#0056b3")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.backgroundColor = "#007bff")
-          }
-        >
-          ➕ Dodaj ofertę
-        </button>
-      </form>
+          <button
+            type="submit"
+            style={{
+              background: "linear-gradient(90deg, #007bff, #00bfff)",
+              color: "white",
+              border: "none",
+              borderRadius: "10px",
+              padding: "14px",
+              fontWeight: 600,
+              fontSize: "1rem",
+              cursor: "pointer",
+              transition: "all 0.25s",
+              boxShadow: "0 4px 12px rgba(0,123,255,0.4)",
+            }}
+          >
+            ➕ Dodaj ofertę
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
