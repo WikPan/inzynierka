@@ -12,6 +12,7 @@ import Terms from "./components/Terms";
 import { useState } from "react";
 import MessagesPage from "./pages/MessagesPage";
 import AdminPage from "./pages/AdminPage";
+import EditOfferPage from "./pages/EditOfferPage";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -39,6 +40,13 @@ export default function App() {
 
         {/* 🔹 Regulamin */}
         <Route path="/terms" element={<Terms />} />
+
+        {/* 🔹 Edycja oferty */}
+        <Route
+          path="/offers/edit/:id"
+          element={isLoggedIn ? <EditOfferPage /> : <Navigate to="/login" replace />}
+        />
+
 
         {/* 🔹 Dodawanie oferty — tylko dla zalogowanych */}
         <Route

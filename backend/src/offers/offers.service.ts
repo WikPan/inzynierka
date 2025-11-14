@@ -5,6 +5,7 @@ import { Offer } from './offer.entity';
 import { OfferImage } from './offer-image.entity';
 import cloudinary from 'src/cloudinary/cloudinary.provider';
 import { Review } from '../reviews/reviews.entity';
+import { UpdateOfferDto } from './update-offer.dto';
 
 @Injectable()
 export class OffersService {
@@ -16,7 +17,7 @@ export class OffersService {
     private imageRepo: Repository<OfferImage>,
   ) {}
 
-  // 🔹 Pobranie pojedynczej oferty
+  // 🔹 Pobranie jednej oferty
   async findOne(id: string) {
     return this.offersRepo.findOne({
       where: { id },
@@ -24,17 +25,16 @@ export class OffersService {
     });
   }
 
-  // 🔹 Zapisanie zdjęć powiązanych z ofertą
+  // 🔹 Zapis zdjęć
   async saveImages(images: OfferImage[]) {
     return this.imageRepo.save(images);
   }
 
-  // 🔹 Tworzenie nowej oferty (z automatycznym geokodowaniem)
+  // 🔹 Tworzenie nowej oferty
   async create(data: Partial<Offer>) {
     let latitude = data.latitude;
     let longitude = data.longitude;
 
-    // Jeśli nie podano współrzędnych, spróbuj znaleźć po nazwie miejscowości
     if ((!latitude || !longitude) && data.localisation) {
       try {
         const query = encodeURIComponent(data.localisation);
@@ -57,6 +57,51 @@ export class OffersService {
       latitude,
       longitude,
       blocked: false,
+    });
+
+    return this.offersRepo.save(offer);
+  }
+
+  // 🔹 Edycja oferty
+  async update(id: string, userId: string, dto: UpdateOfferDto) {
+    const offer = await this.offersRepo.findOne({
+      where: { id },
+      relations: ['user'],
+    });
+
+    if (!offer) throw new BadRequestException('Oferta nie istnieje.');
+    if (offer.user.id !== userId)
+      throw new BadRequestException('Brak uprawnień do edycji tej oferty.');
+
+    let latitude = dto.latitude ?? offer.latitude;
+    let longitude = dto.longitude ?? offer.longitude;
+
+    // Automatyczne geokodowanie przy zmianie lokalizacji
+    if (dto.localisation && (dto.latitude == null || dto.longitude == null)) {
+      try {
+        const query = encodeURIComponent(dto.localisation);
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&countrycodes=pl&q=${query}`,
+          { headers: { 'User-Agent': 'InzynierkaApp/1.0 (kontakt@example.com)' } },
+        );
+        const results = (await response.json()) as any[];
+        if (Array.isArray(results) && results.length > 0) {
+          latitude = parseFloat(results[0].lat);
+          longitude = parseFloat(results[0].lon);
+        }
+      } catch (err) {
+        console.error('❌ Błąd geokodowania:', err);
+      }
+    }
+
+    Object.assign(offer, {
+      ...(dto.title !== undefined && { title: dto.title }),
+      ...(dto.description !== undefined && { description: dto.description }),
+      ...(dto.category !== undefined && { category: dto.category }),
+      ...(dto.localisation !== undefined && { localisation: dto.localisation }),
+      ...(dto.prize !== undefined && { prize: dto.prize }),
+      latitude,
+      longitude,
     });
 
     return this.offersRepo.save(offer);
@@ -132,7 +177,7 @@ export class OffersService {
     return { message: '✅ Oferta i dane powiązane zostały usunięte.' };
   }
 
-  // 🔹 Wyszukiwanie ofert z obsługą odległości
+  // 🔹 Wyszukiwanie ofert
   async searchOffers(filters: {
     title?: string;
     category?: string;
@@ -149,7 +194,6 @@ export class OffersService {
       .where('offer.blocked = false')
       .andWhere('user.accountType != :blocked', { blocked: 'BLOCKED' });
 
-    // 🔸 Filtry tekstowe
     if (filters.title) {
       query.andWhere('LOWER(offer.title) LIKE :title', {
         title: `%${filters.title.toLowerCase()}%`,
@@ -176,10 +220,7 @@ export class OffersService {
       query.andWhere('offer.prize <= :maxPrice', { maxPrice: filters.maxPrice });
     }
 
-    // 🌍 Sortowanie po odległości (jeśli podano współrzędne)
     if (filters.lat && filters.lon) {
-      console.log(`📍 Sortuję po odległości od: ${filters.lat}, ${filters.lon}`);
-
       query
         .andWhere('offer.latitude IS NOT NULL AND offer.longitude IS NOT NULL')
         .addSelect(

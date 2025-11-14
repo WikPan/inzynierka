@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Delete,
   Body,
@@ -21,6 +22,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import cloudinary from 'src/cloudinary/cloudinary.provider';
 import { OfferImage } from './offer-image.entity';
+import { UpdateOfferDto } from './update-offer.dto';
 
 @Controller('offers')
 export class OffersController {
@@ -36,7 +38,7 @@ export class OffersController {
     return this.offersService.findAll();
   }
 
-  // 🔹 Wyszukiwanie z filtrami i lokalizacją (bez radius)
+  // 🔹 Wyszukiwanie z filtrami
   @Get('search')
   async searchOffers(
     @Query('title') title?: string,
@@ -112,7 +114,7 @@ export class OffersController {
     });
   }
 
-  // 🔹 Upload zdjęć do oferty
+  // 🔹 Upload zdjęć
   @UseGuards(AuthGuard)
   @Post(':id/upload-images')
   @UseInterceptors(FilesInterceptor('files', 3))
@@ -157,6 +159,17 @@ export class OffersController {
       message: '✅ Zdjęcia zostały przesłane pomyślnie!',
       images: uploadedImages.map((img) => img.url),
     };
+  }
+
+  // 🔹 Edycja oferty
+  @UseGuards(AuthGuard)
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateOfferDto,
+    @Request() req,
+  ) {
+    return this.offersService.update(id, req.user.id, body);
   }
 
   // 🔹 Usuwanie oferty z powiązanymi danymi
