@@ -187,6 +187,29 @@ export default function Login({ setIsLoggedIn }: LoginProps) {
         >
           {loading ? "⏳ Logowanie..." : "Zaloguj się"}
         </button>
+        <p
+          style={{
+            marginTop: "18px",
+            fontSize: "0.9rem",
+            color: "#555",
+          }}
+        >
+          Zapomniałeś hasła?{" "}
+          <span
+            onClick={() => navigate("/forgot-password")}
+            style={{
+              color: "#dc3545",
+              cursor: "pointer",
+              fontWeight: "600",
+              textDecoration: "underline",
+              transition: "color 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#ff6b6b")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#dc3545")}
+          >
+            Odzyskaj hasło
+          </span>
+        </p>
 
         {/* --- Link do rejestracji --- */}
         <p

@@ -155,4 +155,39 @@ export class UsersService {
     user.accountType = type;
     return this.usersRepo.save(user);
   }
+
+  async forgotPassword(login: string, email: string) {
+  const user = await this.usersRepo.findOne({ where: { login, email } });
+
+  if (!user) {
+    throw new BadRequestException(
+      "Nie znaleziono użytkownika z takim loginem i emailem."
+    );
+  }
+
+  // Generujemy nowe hasło
+  const newPassword = crypto.randomBytes(8).toString("hex");
+  user.password = await bcrypt.hash(newPassword, 10);
+
+  await this.usersRepo.save(user);
+
+  // Wysyłamy nowe hasło
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Odzyskiwanie hasła",
+    text: `Twoje nowe hasło: ${newPassword}\nZaloguj się i natychmiast je zmień.`,
+  });
+
+  return { message: "Nowe hasło zostało wysłane na email." };
+}
+
 }

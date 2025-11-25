@@ -13,6 +13,7 @@ import { useState } from "react";
 import MessagesPage from "./pages/MessagesPage";
 import AdminPage from "./pages/AdminPage";
 import EditOfferPage from "./pages/EditOfferPage";
+import ForgotPassword from "./pages/ForgotPassword";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -59,7 +60,7 @@ export default function App() {
           path="/profile"
           element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" replace />}
         />
-
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         {/* 🔹 Panel admina */}
         <Route path="/admin" element={<AdminPage />} />
 

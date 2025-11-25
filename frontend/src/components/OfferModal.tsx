@@ -26,6 +26,7 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
     ratingsCount: 0,
     reportsCount: 0,
   });
+
   const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -268,7 +269,8 @@ export default function OfferModal({ offer, onClose }: OfferModalProps) {
             ⭐ Zobacz recenzje
           </button>
 
-          {!isOwner && (
+          {/* 🔒 Tylko zalogowany i nie-właściciel widzi ten przycisk */}
+          {userId && !isOwner && (
             <button
               style={{
                 background: "linear-gradient(90deg, #28a745, #5dd85d)",

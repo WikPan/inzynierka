@@ -124,5 +124,9 @@ async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Request() req) {
     throw new BadRequestException(error.message || 'Upload failed');
   }
 }
+@Post("forgot-password")
+async forgotPassword(@Body() body: { login: string; email: string }) {
+  return this.usersService.forgotPassword(body.login, body.email);
+}
 
 }

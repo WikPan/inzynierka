@@ -70,6 +70,11 @@ export default function Home() {
 
   // 🔍 Wyszukiwanie
   const handleSearch = () => {
+    if (minPrice !== null && price !== null && minPrice > price) {
+      alert("Minimalna cena nie może być większa niż maksymalna.");
+      return;
+    }
+
     setPage(1);
     fetchOffers({
       title,
@@ -169,7 +174,7 @@ export default function Home() {
             🔎 Filtry
           </h3>
 
-          {/* 🔤 Tytuł */}
+          {/* 🔤 Tytuł (POPRAWIONE!) */}
           <Autosuggest
             suggestions={titleSuggestions}
             onSuggestionsFetchRequested={({ value }) => fetchTitleSuggestions(value)}
@@ -186,12 +191,13 @@ export default function Home() {
               onChange: (_: any, { newValue }: any) => setTitle(newValue),
               style: {
                 width: "100%",
-                padding: "11px 12px",
-                borderRadius: "10px",
+                padding: "14px 14px",
+                borderRadius: "12px",
                 border: "1px solid #ccc",
-                backgroundColor: "#f9f9f9",
-                fontSize: "0.95rem",
+                backgroundColor: "#ffffff",
+                fontSize: "1rem",
                 outline: "none",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
               },
             }}
           />
@@ -219,7 +225,7 @@ export default function Home() {
             <option value="Inne">Inne</option>
           </select>
 
-          {/* 📍 Lokalizacja (poprawiona wielkość i styl) */}
+          {/* 📍 Lokalizacja */}
           <Autosuggest
             suggestions={locSuggestions}
             onSuggestionsFetchRequested={({ value }) => fetchLocSuggestions(value)}
@@ -401,7 +407,6 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* PAGINACJA */}
               {totalPages > 1 && (
                 <div
                   style={{
