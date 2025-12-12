@@ -28,39 +28,48 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [localisation, setLocalisation] = useState("");
-  const [minPrice, setMinPrice] = useState<number | null>(null);
-  const [price, setPrice] = useState<number | null>(null);
-  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
-  // Współrzędne lokalizacji
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  // Lokalizacja
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(
+    null
+  );
 
   // Paginacja
   const [page, setPage] = useState(1);
   const perPage = 12;
 
   // Sugestie
-  const [titleSuggestions, setTitleSuggestions] = useState<TitleSuggestion[]>([]);
+  const [titleSuggestions, setTitleSuggestions] =
+    useState<TitleSuggestion[]>([]);
   const [locSuggestions, setLocSuggestions] = useState<Suggestion[]>([]);
   const [useLocation, setUseLocation] = useState(false);
 
+  // Uniwersalny styl inputów
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    border: "1px solid #d0d7e2",
+    background: "#fafafa",
+    fontSize: "0.95rem",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
   useEffect(() => {
-    fetchOffers();
+    fetchOffers({});
   }, []);
 
-  // 🔹 Pobieranie ofert
-  async function fetchOffers(filters?: any) {
+  async function fetchOffers(filters: any) {
     setLoading(true);
     try {
-      const params = new URLSearchParams(filters || {}).toString();
+      const params = new URLSearchParams(filters).toString();
       const { data } = await axios.get(
         `http://localhost:3000/offers/search${params ? "?" + params : ""}`
       );
       setOffers(data);
-      if (data.length > 0) {
-        const maxFound = Math.max(...data.map((o: Offer) => o.prize || 0));
-        setMaxPrice(maxFound);
-      }
     } catch (err) {
       console.error("❌ Błąd pobierania ofert:", err);
     } finally {
@@ -68,54 +77,63 @@ export default function Home() {
     }
   }
 
-  // 🔍 Wyszukiwanie
   const handleSearch = () => {
-    if (minPrice !== null && price !== null && minPrice > price) {
+    if (minPrice && maxPrice && Number(minPrice) > Number(maxPrice)) {
       alert("Minimalna cena nie może być większa niż maksymalna.");
       return;
     }
 
+    const filters: any = {};
+
+    if (title.trim()) filters.title = title;
+    if (category.trim()) filters.category = category;
+    if (localisation.trim()) filters.localisation = localisation;
+    if (minPrice) filters.minPrice = Number(minPrice);
+    if (maxPrice) filters.maxPrice = Number(maxPrice);
+    if (coords) {
+      filters.lat = coords.lat;
+      filters.lon = coords.lon;
+    }
+
     setPage(1);
-    fetchOffers({
-      title,
-      category,
-      ...(minPrice ? { minPrice } : {}),
-      ...(price ? { maxPrice: price } : {}),
-      ...(coords ? { lat: coords.lat, lon: coords.lon } : {}),
-    });
+    fetchOffers(filters);
   };
 
-  // 🔹 Sugestie tytułów
   const fetchTitleSuggestions = async (value: string) => {
     if (value.trim().length < 2) return setTitleSuggestions([]);
     const { data } = await axios.get(
-      `http://localhost:3000/offers/suggest-titles?q=${encodeURIComponent(value)}`
+      `http://localhost:3000/offers/suggest-titles?q=${encodeURIComponent(
+        value
+      )}`
     );
     setTitleSuggestions(data.slice(0, 5));
   };
 
-  // 🔹 Sugestie lokalizacji
   const fetchLocSuggestions = async (value: string) => {
     if (value.trim().length < 2) return setLocSuggestions([]);
     const res = await fetch(
-      `http://localhost:3000/geo/autocomplete?query=${encodeURIComponent(value)}`
+      `http://localhost:3000/geo/autocomplete?query=${encodeURIComponent(
+        value
+      )}`
     );
     const data = await res.json();
     setLocSuggestions(data.slice(0, 5));
   };
 
-  // 📍 Użyj mojej lokalizacji
-  const handleUseMyLocation = async () => {
+  const handleUseMyLocation = () => {
     if (!navigator.geolocation) return alert("Brak wsparcia geolokalizacji.");
     setUseLocation(true);
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+
         try {
           const res = await fetch(
             `http://localhost:3000/geo/reverse?lat=${latitude}&lon=${longitude}`
           );
           const data: Suggestion = await res.json();
+
           setLocalisation(data.label);
           setCoords({ lat: latitude, lon: longitude });
         } catch {
@@ -131,7 +149,6 @@ export default function Home() {
     );
   };
 
-  // Paginacja
   const totalPages = Math.ceil(offers.length / perPage);
   const paginatedOffers = offers.slice((page - 1) * perPage, page * perPage);
 
@@ -150,233 +167,231 @@ export default function Home() {
           display: "flex",
           maxWidth: "1400px",
           width: "100%",
-          gap: "25px",
+          gap: "32px",
           padding: "0 30px",
+          alignItems: "flex-start",
         }}
       >
-        {/* === PANEL FILTRÓW === */}
+        {/* PANEL FILTRÓW */}
         <div
           style={{
-            width: "320px",
+            width: "360px",
             background: "#ffffff",
-            borderRadius: "18px",
-            boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-            padding: "25px",
+            borderRadius: "22px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+            padding: "26px 24px 28px",
             display: "flex",
             flexDirection: "column",
             gap: "18px",
-            position: "sticky",
-            top: "100px",
-            height: "fit-content",
           }}
         >
-          <h3 style={{ color: "#007bff", fontWeight: 700, marginBottom: "4px" }}>
-            🔎 Filtry
-          </h3>
-
-          {/* 🔤 Tytuł (POPRAWIONE!) */}
-          <Autosuggest
-            suggestions={titleSuggestions}
-            onSuggestionsFetchRequested={({ value }) => fetchTitleSuggestions(value)}
-            onSuggestionsClearRequested={() => setTitleSuggestions([])}
-            getSuggestionValue={(s) => s.title}
-            renderSuggestion={(s) => (
-              <div style={{ padding: "8px 12px", borderBottom: "1px solid #eee" }}>
-                {s.title}
-              </div>
-            )}
-            inputProps={{
-              placeholder: "Tytuł oferty",
-              value: title,
-              onChange: (_: any, { newValue }: any) => setTitle(newValue),
-              style: {
-                width: "100%",
-                padding: "14px 14px",
-                borderRadius: "12px",
-                border: "1px solid #ccc",
-                backgroundColor: "#ffffff",
-                fontSize: "1rem",
-                outline: "none",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-              },
-            }}
-          />
-
-          {/* 🧩 Kategoria */}
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+          <div
             style={{
-              width: "100%",
-              padding: "11px 12px",
-              borderRadius: "10px",
-              border: "1px solid #ccc",
-              backgroundColor: "#f9f9f9",
-              fontSize: "0.95rem",
-              outline: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "4px",
             }}
           >
-            <option value="">Wszystkie kategorie</option>
-            <option value="Pomoc">Pomoc</option>
-            <option value="Kuchnia">Kuchnia</option>
-            <option value="Ogród">Ogród</option>
-            <option value="Prace dorywcze">Prace dorywcze</option>
-            <option value="Transport">Transport</option>
-            <option value="Inne">Inne</option>
-          </select>
+            <span style={{ fontSize: "1.4rem" }}>🔎</span>
+            <h3
+              style={{
+                color: "#007bff",
+                fontWeight: 700,
+                margin: 0,
+                fontSize: "1.35rem",
+              }}
+            >
+              Filtry
+            </h3>
+          </div>
 
-          {/* 📍 Lokalizacja */}
-          <Autosuggest
-            suggestions={locSuggestions}
-            onSuggestionsFetchRequested={({ value }) => fetchLocSuggestions(value)}
-            onSuggestionsClearRequested={() => setLocSuggestions([])}
-            getSuggestionValue={(s) => {
-              setCoords({ lat: s.lat, lon: s.lon });
-              return s.label;
-            }}
-            renderSuggestion={(s) => (
-              <div
-                style={{
-                  padding: "8px 12px",
-                  borderBottom: "1px solid #eee",
-                  background: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                {s.label}
-              </div>
-            )}
-            inputProps={{
-              placeholder: "Lokalizacja",
-              value: localisation,
-              onChange: (_: any, { newValue }: any) => setLocalisation(newValue),
-              style: {
-                width: "100%",
-                padding: "11px 12px",
-                borderRadius: "10px",
-                border: "1px solid #ccc",
-                backgroundColor: "#f9f9f9",
-                fontSize: "0.95rem",
-                boxSizing: "border-box",
-                outline: "none",
-              },
-            }}
-            theme={{
-              container: { width: "100%" },
-              input: { width: "100%" },
-              suggestionsContainer: {
-                position: "absolute",
-                zIndex: 10,
-                background: "#fff",
-                width: "100%",
-                borderRadius: "10px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                overflow: "hidden",
-              },
-            }}
-          />
+          {/* Tytuł */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.9rem", color: "#555" }}>Tytuł</label>
+            <Autosuggest
+              suggestions={titleSuggestions}
+              onSuggestionsFetchRequested={({ value }) =>
+                fetchTitleSuggestions(value)
+              }
+              onSuggestionsClearRequested={() => setTitleSuggestions([])}
+              getSuggestionValue={(s) => s.title}
+              renderSuggestion={(s) => (
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    cursor: "pointer",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {s.title}
+                </div>
+              )}
+              inputProps={{
+                placeholder: "Wpisz tytuł oferty",
+                value: title,
+                onChange: (_: any, { newValue }: any) => setTitle(newValue),
+                style: inputStyle,
+              }}
+              theme={{
+                suggestionsContainer: {
+                  background: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 5px 18px rgba(0,0,0,0.12)",
+                  marginTop: "6px",
+                  overflow: "hidden",
+                },
+              }}
+            />
+          </div>
 
-          {/* 🔘 Przycisk lokalizacji */}
+          {/* Kategoria */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.9rem", color: "#555" }}>Kategoria</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="">Wszystkie kategorie</option>
+              <option value="Pomoc">Pomoc</option>
+              <option value="Kuchnia">Kuchnia</option>
+              <option value="Ogród">Ogród</option>
+              <option value="Prace dorywcze">Prace dorywcze</option>
+              <option value="Transport">Transport</option>
+              <option value="Inne">Inne</option>
+            </select>
+          </div>
+
+          {/* Lokalizacja */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.9rem", color: "#555" }}>
+              Lokalizacja
+            </label>
+            <Autosuggest
+              suggestions={locSuggestions}
+              onSuggestionsFetchRequested={({ value }) =>
+                fetchLocSuggestions(value)
+              }
+              onSuggestionsClearRequested={() => setLocSuggestions([])}
+              getSuggestionValue={(s) => {
+                setCoords({ lat: s.lat, lon: s.lon });
+                return s.label;
+              }}
+              renderSuggestion={(s) => (
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    cursor: "pointer",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {s.label}
+                </div>
+              )}
+              inputProps={{
+                placeholder: "Miasto / miejscowość",
+                value: localisation,
+                onChange: (_: any, { newValue }: any) =>
+                  setLocalisation(newValue),
+                style: inputStyle,
+              }}
+              theme={{
+                suggestionsContainer: {
+                  background: "white",
+                  borderRadius: "12px",
+                  boxShadow: "0 5px 18px rgba(0,0,0,0.12)",
+                  marginTop: "6px",
+                  overflow: "hidden",
+                },
+              }}
+            />
+          </div>
+
+          {/* Przycisk lokalizacji */}
           <button
             onClick={handleUseMyLocation}
             disabled={useLocation}
             style={{
+              marginTop: "4px",
               background: "linear-gradient(90deg, #007bff, #00bfff)",
               color: "white",
               border: "none",
-              borderRadius: "10px",
-              padding: "12px",
-              cursor: "pointer",
+              borderRadius: "999px",
+              padding: "11px 14px",
               fontWeight: 600,
-              width: "100%",
-              transition: "0.25s",
-              boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
+              cursor: "pointer",
+              fontSize: "0.95rem",
+              boxShadow: "0 4px 12px rgba(0,123,255,0.35)",
             }}
           >
-            {useLocation ? "⏳ Pobieranie..." : "📍 Użyj mojej lokalizacji"}
+            {useLocation ? "⏳ Pobieranie lokalizacji..." : "📍 Użyj mojej lokalizacji"}
           </button>
 
-          {/* 💰 Zakres ceny */}
+          {/* Zakres ceny */}
           <div
             style={{
-              backgroundColor: "#f9fafc",
-              padding: "14px",
-              borderRadius: "12px",
-              border: "1px solid #e0e0e0",
+              marginTop: "4px",
+              padding: "12px 12px 14px",
+              borderRadius: "14px",
+              background: "#f8fbff",
+              border: "1px solid #e2ecf7",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
             }}
           >
-            <label style={{ fontWeight: 600, display: "block", marginBottom: "10px" }}>
-              💰 Zakres ceny
-            </label>
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>💰</span>
+              <span
+                style={{ fontWeight: 600, fontSize: "0.95rem", color: "#444" }}
+              >
+                Zakres ceny
+              </span>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px" }}>
               <input
                 type="number"
-                min="0"
-                value={minPrice ?? ""}
-                onChange={(e) =>
-                  setMinPrice(e.target.value === "" ? null : Number(e.target.value))
-                }
                 placeholder="od"
-                style={{
-                  width: "48%",
-                  padding: "10px",
-                  borderRadius: "10px",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                }}
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                style={{ ...inputStyle, padding: "10px 12px" }}
               />
-              <span style={{ color: "#555", fontWeight: 500 }}>—</span>
               <input
                 type="number"
-                min="0"
-                value={price ?? ""}
-                onChange={(e) =>
-                  setPrice(e.target.value === "" ? null : Number(e.target.value))
-                }
                 placeholder="do"
-                style={{
-                  width: "48%",
-                  padding: "10px",
-                  borderRadius: "10px",
-                  border: "1px solid #ccc",
-                  textAlign: "center",
-                }}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                style={{ ...inputStyle, padding: "10px 12px" }}
               />
             </div>
           </div>
 
-          {/* 🔍 Szukaj */}
+          {/* Szukaj */}
           <button
             onClick={handleSearch}
             style={{
+              marginTop: "4px",
               background: "linear-gradient(90deg, #00b85c, #28a745)",
               color: "white",
               border: "none",
-              borderRadius: "10px",
-              padding: "12px",
-              cursor: "pointer",
-              fontWeight: 600,
+              borderRadius: "999px",
+              padding: "13px 16px",
+              fontWeight: 700,
               fontSize: "1rem",
-              width: "100%",
-              transition: "0.25s",
-              boxShadow: "0 4px 12px rgba(40,167,69,0.3)",
+              cursor: "pointer",
+              boxShadow: "0 4px 14px rgba(40,167,69,0.35)",
             }}
           >
             🔍 Szukaj
           </button>
         </div>
 
-        {/* === LISTA OFERT === */}
+        {/* LISTA OFERT */}
         <div style={{ flexGrow: 1 }}>
           {loading ? (
-            <p style={{ textAlign: "center" }}>Ładowanie ofert...</p>
+            <p style={{ textAlign: "center" }}>Ładowanie...</p>
           ) : (
             <>
               <div
@@ -384,7 +399,7 @@ export default function Home() {
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
                   gap: "20px",
-                  justifyItems: "center",
+                  alignItems: "stretch",
                 }}
               >
                 {paginatedOffers.map((offer) => (
@@ -396,8 +411,8 @@ export default function Home() {
                     price={offer.prize}
                     category={offer.category}
                     images={
-                      offer.images && offer.images.length > 0
-                        ? offer.images.map((img) => img.url)
+                      offer.images?.length
+                        ? offer.images.map((i) => i.url)
                         : ["/logo.png"]
                     }
                     rating={offer.avgRounded ?? undefined}
@@ -412,21 +427,13 @@ export default function Home() {
                   style={{
                     display: "flex",
                     justifyContent: "center",
-                    alignItems: "center",
                     gap: "10px",
-                    marginTop: "25px",
+                    marginTop: "20px",
                   }}
                 >
                   <button
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
-                    style={{
-                      padding: "8px 14px",
-                      borderRadius: "8px",
-                      border: "1px solid #ccc",
-                      cursor: page === 1 ? "not-allowed" : "pointer",
-                      background: page === 1 ? "#e9ecef" : "#fff",
-                    }}
                   >
                     ◀ Poprzednia
                   </button>
@@ -438,13 +445,6 @@ export default function Home() {
                   <button
                     disabled={page === totalPages}
                     onClick={() => setPage(page + 1)}
-                    style={{
-                      padding: "8px 14px",
-                      borderRadius: "8px",
-                      border: "1px solid #ccc",
-                      cursor: page === totalPages ? "not-allowed" : "pointer",
-                      background: page === totalPages ? "#e9ecef" : "#fff",
-                    }}
                   >
                     Następna ▶
                   </button>
@@ -454,7 +454,10 @@ export default function Home() {
           )}
 
           {selectedOffer && (
-            <OfferModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
+            <OfferModal
+              offer={selectedOffer}
+              onClose={() => setSelectedOffer(null)}
+            />
           )}
         </div>
       </div>

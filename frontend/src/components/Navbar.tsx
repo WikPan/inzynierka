@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo2.png";
 
 export default function Navbar({
   isLoggedIn,
@@ -24,8 +24,7 @@ export default function Navbar({
   return (
     <nav
       style={{
-        background:
-          "linear-gradient(90deg, rgba(0,123,255,0.9), rgba(0,191,255,0.85))",
+        background: "linear-gradient(90deg, #0088ff, #00c7ff)",
         color: "#fff",
         padding: "0.9rem 2rem",
         display: "flex",
@@ -34,16 +33,16 @@ export default function Navbar({
         position: "sticky",
         top: 0,
         zIndex: 1000,
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+        backdropFilter: "blur(10px)",
+        boxShadow: "0 2px 14px rgba(0,0,0,0.15)",
       }}
     >
-      {/* 🔹 Logo */}
+      {/* LEFT — Logo */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          gap: "12px",
           cursor: "pointer",
         }}
         onClick={() => navigate("/")}
@@ -52,14 +51,29 @@ export default function Navbar({
           src={logo}
           alt="Oofferto logo"
           style={{
-            width: "52px",
-            height: "52px",
+            width: "58px",
+            height: "58px",
             objectFit: "contain",
+            filter: `
+              drop-shadow(0 0 4px rgba(0, 160, 255, 0.55))
+              drop-shadow(0 0 7px rgba(0, 110, 255, 0.35))
+              drop-shadow(0 0 12px rgba(0, 180, 255, 0.25))
+            `,
+            transition: "0.25s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.filter =
+              "drop-shadow(0 0 6px rgba(0, 180, 255, 0.90)) drop-shadow(0 0 14px rgba(0, 160, 255, 0.60))";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.filter =
+              "drop-shadow(0 0 4px rgba(0, 160, 255, 0.55)) drop-shadow(0 0 7px rgba(0, 110, 255, 0.35)) drop-shadow(0 0 12px rgba(0, 180, 255, 0.25))";
           }}
         />
+
         <span
           style={{
-            fontSize: "1.4rem",
+            fontSize: "1.45rem",
             fontWeight: 700,
             color: "white",
             letterSpacing: "0.5px",
@@ -69,41 +83,41 @@ export default function Navbar({
         </span>
       </div>
 
-      {/* 🔹 Linki */}
+      {/* RIGHT — Links */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "1.8rem",
-          fontSize: "1rem",
+          gap: "1.6rem",
+          fontSize: "1.05rem",
           fontWeight: 500,
         }}
       >
-        <Link
-          to="/"
-          style={{
-            color: "white",
-            textDecoration: "none",
-            transition: "color 0.2s ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-        >
-          Strona główna
-        </Link>
-
-        <Link
-          to="/offers"
-          style={{
-            color: "white",
-            textDecoration: "none",
-            transition: "color 0.2s ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-        >
-          Oferty
-        </Link>
+        {/* Unified style for nav links */}
+        {[
+          { label: "Strona główna", path: "/" },
+          { label: "Oferty", path: "/offers" },
+        ].map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            style={{
+              color: "white",
+              textDecoration: "none",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              transition: "0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.18)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            {item.label}
+          </Link>
+        ))}
 
         {isLoggedIn ? (
           <>
@@ -114,25 +128,19 @@ export default function Navbar({
                   style={{
                     color: "white",
                     textDecoration: "none",
-                    transition: "color 0.2s ease",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    transition: "0.2s",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background =
+                      "rgba(255,255,255,0.18)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   👑 Panel admina
-                </Link>
-
-                <Link
-                  to="/messages"
-                  style={{
-                    color: "white",
-                    textDecoration: "none",
-                    transition: "color 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-                >
-                  💬 Wiadomości
                 </Link>
               </>
             ) : (
@@ -142,25 +150,19 @@ export default function Navbar({
                   style={{
                     color: "white",
                     textDecoration: "none",
-                    transition: "color 0.2s ease",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    transition: "0.2s",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background =
+                      "rgba(255,255,255,0.18)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   ➕ Dodaj ofertę
-                </Link>
-
-                <Link
-                  to="/messages"
-                  style={{
-                    color: "white",
-                    textDecoration: "none",
-                    transition: "color 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
-                >
-                  💬 Wiadomości
                 </Link>
 
                 <Link
@@ -168,10 +170,17 @@ export default function Navbar({
                   style={{
                     color: "white",
                     textDecoration: "none",
-                    transition: "color 0.2s ease",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    transition: "0.2s",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#d9f1ff")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "white")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background =
+                      "rgba(255,255,255,0.18)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   👤 Profil
                 </Link>
@@ -181,20 +190,22 @@ export default function Navbar({
             <button
               onClick={handleLogout}
               style={{
-                background: "linear-gradient(90deg, #007bff, #00bfff)",
+                background: "rgba(255,255,255,0.25)",
                 color: "white",
                 border: "none",
                 borderRadius: "10px",
                 padding: "8px 18px",
                 fontWeight: 600,
                 cursor: "pointer",
-                boxShadow: "0 4px 10px rgba(0,123,255,0.4)",
-                transition: "all 0.2s ease",
+                transition: "0.25s",
+                backdropFilter: "blur(6px)",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.filter = "brightness(1.1)")
+                (e.currentTarget.style.background = "rgba(255,255,255,0.35)")
               }
-              onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.25)")
+              }
             >
               Wyloguj
             </button>
@@ -204,19 +215,21 @@ export default function Navbar({
             <Link
               to="/login"
               style={{
-                background: "linear-gradient(90deg, #007bff, #00bfff)",
+                background: "rgba(255,255,255,0.25)",
                 color: "white",
                 borderRadius: "10px",
                 padding: "8px 16px",
                 textDecoration: "none",
                 fontWeight: 600,
-                boxShadow: "0 4px 10px rgba(0,123,255,0.4)",
-                transition: "all 0.2s ease",
+                transition: "0.25s",
+                backdropFilter: "blur(6px)",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.filter = "brightness(1.1)")
+                (e.currentTarget.style.background = "rgba(255,255,255,0.35)")
               }
-              onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "rgba(255,255,255,0.25)")
+              }
             >
               Zaloguj się
             </Link>
@@ -230,11 +243,11 @@ export default function Navbar({
                 padding: "8px 16px",
                 textDecoration: "none",
                 fontWeight: 600,
-                transition: "all 0.2s ease",
+                transition: "0.25s",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "white";
-                e.currentTarget.style.color = "#007bff";
+                e.currentTarget.style.color = "#0088ff";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "transparent";

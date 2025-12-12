@@ -123,188 +123,184 @@ export default function MessagesPage() {
     }
   }
 
- return (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      background: "linear-gradient(180deg, #0d1117, #161b22)",
-      minHeight: "100vh",
-      color: "#e6edf3",
-      fontFamily: "Inter, sans-serif",
-    }}
-  >
-    {/* Cały obszar czatu */}
+  return (
     <div
       style={{
-        flexGrow: 1,
         display: "flex",
-        justifyContent: "center",
-        alignItems: "stretch",
-        padding: "20px",
+        flexDirection: "column",
+        background: "linear-gradient(180deg, #f0f6ff, #ffffff)",
+        height: "100vh",
+        color: "#1b1b1b",
+        fontFamily: "Inter, sans-serif",
+        paddingTop: "20px",
       }}
     >
       <div
         style={{
-          width: "100%",
-          maxWidth: "1300px",
+          flexGrow: 1,
           display: "flex",
-          background: "rgba(13,17,23,0.85)",
-          borderRadius: "18px",
-          boxShadow: "0 0 25px rgba(0,0,0,0.4)",
-          overflow: "hidden",
-          border: "1px solid rgba(88,166,255,0.1)",
-          backdropFilter: "blur(12px)",
-          minHeight: "calc(100vh - 100px)", // zajmuje prawie całą przestrzeń pod navem
+          justifyContent: "center",
+          alignItems: "stretch",
+          padding: "20px",
         }}
       >
-        {/* Lewy panel — lista rozmów */}
         <div
           style={{
-            width: "30%",
-            background: "rgba(22,27,34,0.85)",
-            borderRight: "1px solid rgba(88,166,255,0.1)",
-            padding: "20px",
-            overflowY: "auto",
+            width: "100%",
+            maxWidth: "1300px",
+            display: "flex",
+            background: "#ffffff",
+            borderRadius: "18px",
+            boxShadow: "0 4px 25px rgba(0,0,0,0.08)",
+            overflow: "hidden",
+            border: "1px solid #e1e7ff",
+            height: "calc(100vh - 120px)",
           }}
         >
-          <h3
+          {/* LEWA LISTA CZATÓW */}
+          <div
             style={{
-              color: "#58a6ff",
-              textAlign: "center",
-              fontWeight: 700,
-              marginBottom: "20px",
+              width: "30%",
+              background: "#f7faff",
+              borderRight: "1px solid #dde7ff",
+              padding: "20px",
+              overflowY: "auto",
             }}
           >
-            💬 Twoje rozmowy
-          </h3>
+            <h3
+              style={{
+                color: "#007bff",
+                textAlign: "center",
+                fontWeight: 700,
+                marginBottom: "20px",
+              }}
+            >
+              💬 Twoje rozmowy
+            </h3>
 
-          {chats.length === 0 ? (
-            <p style={{ textAlign: "center", color: "#9ba1b0" }}>Brak rozmów.</p>
-          ) : (
-            chats.map((chat) => (
-              <div
-                key={`${chat.offerId}_${chat.partner?.id}`}
-                onClick={() => loadMessages(chat)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px",
-                  marginBottom: "10px",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  background:
-                    selectedChat?.offerId === chat.offerId &&
-                    selectedChat?.partner?.id === chat.partner?.id
-                      ? "rgba(56,139,253,0.15)"
-                      : "rgba(255,255,255,0.03)",
-                  transition: "all 0.25s ease",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "rgba(56,139,253,0.08)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background =
-                    selectedChat?.offerId === chat.offerId &&
-                    selectedChat?.partner?.id === chat.partner?.id
-                      ? "rgba(56,139,253,0.15)"
-                      : "rgba(255,255,255,0.03)")
-                }
-              >
-                <img
-                  src={chat.partner?.avatarUrl || defaultAvatar}
-                  alt="avatar"
-                  onError={(e) => (e.currentTarget.src = defaultAvatar)}
+            {chats.length === 0 ? (
+              <p style={{ textAlign: "center", color: "#8c99b2" }}>
+                Brak rozmów.
+              </p>
+            ) : (
+              chats.map((chat) => (
+                <div
+                  key={`${chat.offerId}_${chat.partner?.id}`}
+                  onClick={() => loadMessages(chat)}
                   style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    border: "2px solid #58a6ff",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "12px",
+                    marginBottom: "10px",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    background:
+                      selectedChat?.offerId === chat.offerId &&
+                      selectedChat?.partner?.id === chat.partner?.id
+                        ? "rgba(0,123,255,0.12)"
+                        : "rgba(255,255,255,0.7)",
+                    transition: "all 0.25s ease",
                   }}
-                />
-                <div style={{ flexGrow: 1 }}>
-                  <b style={{ color: "#58a6ff" }}>
-                    {chat.partner?.login || "Nieznany użytkownik"}
-                  </b>
-                  <p style={{ margin: 0, fontSize: "0.9rem", color: "#c9d1d9" }}>
-                    {chat.offerTitle}
-                  </p>
-                  <p style={{ margin: 0, fontSize: "0.8rem", color: "#8b949e" }}>
-                    {chat.lastMessage.content.slice(0, 40)}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+                >
+                  <img
+                    src={chat.partner?.avatarUrl || defaultAvatar}
+                    style={{
+                      width: "44px",
+                      height: "44px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "2px solid #007bff",
+                    }}
+                  />
 
-        {/* Prawa sekcja — czat */}
-        <div
-          style={{
-            flexGrow: 1,
-            display: "flex",
-            flexDirection: "column",
-            padding: "25px",
-            background: "rgba(10,13,18,0.8)",
-            overflow: "hidden",
-          }}
-        >
-          {selectedChat ? (
-            <>
-              {/* Nagłówek */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  borderBottom: "1px solid rgba(88,166,255,0.15)",
-                  paddingBottom: "12px",
-                  marginBottom: "15px",
-                  flexShrink: 0,
-                }}
-              >
-                <img
-                  src={selectedChat.partner?.avatarUrl || defaultAvatar}
-                  alt="avatar"
-                  onError={(e) => (e.currentTarget.src = defaultAvatar)}
+                  <div style={{ flexGrow: 1 }}>
+                    <b style={{ color: "#007bff" }}>
+                      {chat.partner?.login}
+                    </b>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.9rem",
+                        color: "#5c6b82",
+                      }}
+                    >
+                      {chat.offerTitle}
+                    </p>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.8rem",
+                        color: "#7d8da6",
+                      }}
+                    >
+                      {chat.lastMessage.content.slice(0, 40)}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* PRAWA STRONA — LAYOUT MESSENGER */}
+          <div
+            style={{
+              flexGrow: 1,
+              display: "flex",
+              flexDirection: "column",
+              background: "#ffffff",
+              height: "100%",
+              overflow: "hidden",
+            }}
+          >
+            {selectedChat ? (
+              <>
+                {/* HEADER */}
+                <div
                   style={{
-                    width: "50px",
-                    height: "50px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    border: "2px solid #58a6ff",
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    borderBottom: "1px solid #e3e9ff",
+                    padding: "16px",
                   }}
-                />
-                <div>
-                  <h3 style={{ margin: 0, color: "#58a6ff" }}>
-                    {selectedChat.partner?.login}
-                  </h3>
-                  <p style={{ margin: 0, color: "#8b949e" }}>
-                    {selectedChat.offerTitle}
-                  </p>
+                >
+                  <img
+                    src={
+                      selectedChat.partner?.avatarUrl || defaultAvatar
+                    }
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "2px solid #007bff",
+                    }}
+                  />
+                  <div>
+                    <h3 style={{ margin: 0, color: "#007bff" }}>
+                      {selectedChat.partner?.login}
+                    </h3>
+                    <p style={{ margin: 0, color: "#5c6b82" }}>
+                      {selectedChat.offerTitle}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Wiadomości */}
-              <div
-                style={{
-                  flexGrow: 1,
-                  overflowY: "auto",
-                  padding: "10px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "flex-end",
-                  gap: "10px",
-                }}
-              >
-                {messages.length === 0 ? (
-                  <p style={{ textAlign: "center", color: "#8b949e" }}>
-                    Brak wiadomości.
-                  </p>
-                ) : (
-                  messages.map((msg) => (
+                {/* WIADOMOŚCI */}
+                <div
+                  style={{
+                    flexGrow: 1,
+                    overflowY: "auto",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                    background: "#f7faff",
+                  }}
+                >
+                  {messages.map((msg) => (
                     <div
                       key={msg.id}
                       style={{
@@ -312,24 +308,26 @@ export default function MessagesPage() {
                           msg.fromUser?.id === userId
                             ? "flex-end"
                             : "flex-start",
-                        maxWidth: "70%",
+                        maxWidth: "75%",
                       }}
                     >
                       <div
                         style={{
                           background:
                             msg.fromUser?.id === userId
-                              ? "linear-gradient(90deg, #238636, #2ea043)"
-                              : "rgba(255,255,255,0.05)",
+                              ? "linear-gradient(90deg, #007bff, #33b1ff)"
+                              : "#eef4ff",
                           color:
-                            msg.fromUser?.id === userId ? "#fff" : "#e6edf3",
+                            msg.fromUser?.id === userId
+                              ? "#fff"
+                              : "#1b1b1b",
                           padding: "10px 14px",
                           borderRadius:
                             msg.fromUser?.id === userId
                               ? "16px 16px 0 16px"
                               : "16px 16px 16px 0",
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.25)",
-                          wordBreak: "break-word",
+                          boxShadow:
+                            "0 2px 6px rgba(0,0,0,0.1)",
                           fontSize: "0.95rem",
                         }}
                       >
@@ -337,79 +335,84 @@ export default function MessagesPage() {
                       </div>
                       <div
                         style={{
-                          fontSize: "0.7rem",
-                          color: "#6e7681",
+                          fontSize: "0.75rem",
+                          color: "#7d8da6",
                           marginTop: "4px",
                         }}
                       >
-                        {new Date(msg.createdAt).toLocaleString()}
+                        {new Date(
+                          msg.createdAt
+                        ).toLocaleString()}
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
 
-              {/* Pole wysyłania */}
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: "15px",
-                  gap: "10px",
-                  flexShrink: 0,
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="💭 Napisz wiadomość..."
-                  value={newMsg}
-                  onChange={(e) => setNewMsg(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                {/* INPUT */}
+                <div
                   style={{
-                    flexGrow: 1,
-                    padding: "12px",
-                    borderRadius: "10px",
-                    border: "1px solid rgba(88,166,255,0.3)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "#e6edf3",
-                    outline: "none",
-                  }}
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={loading}
-                  style={{
-                    background: loading
-                      ? "rgba(88,166,255,0.4)"
-                      : "linear-gradient(90deg, #58a6ff, #00bfff)",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "10px",
-                    padding: "0 22px",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                    transition: "all 0.2s ease",
-                    boxShadow: "0 4px 10px rgba(56,139,253,0.3)",
+                    flexShrink: 0,
+                    display: "flex",
+                    padding: "14px",
+                    gap: "10px",
+                    borderTop: "1px solid #dce6ff",
+                    background: "#ffffff",
                   }}
                 >
-                  {loading ? "..." : "Wyślij"}
-                </button>
-              </div>
-            </>
-          ) : (
-            <p
-              style={{
-                textAlign: "center",
-                color: "#8b949e",
-                margin: "auto",
-                fontSize: "1.2rem",
-              }}
-            >
-              👉 Wybierz rozmowę, aby rozpocząć czat
-            </p>
-          )}
+                  <input
+                    value={newMsg}
+                    onChange={(e) =>
+                      setNewMsg(e.target.value)
+                    }
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && sendMessage()
+                    }
+                    placeholder="Napisz wiadomość..."
+                    style={{
+                      flexGrow: 1,
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid #c8d6ff",
+                      background: "#f8faff",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={loading}
+                    style={{
+                      background: loading
+                        ? "#9fcaff"
+                        : "linear-gradient(90deg, #007bff, #33b1ff)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "0 22px",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      boxShadow:
+                        "0 4px 10px rgba(0,123,255,0.3)",
+                    }}
+                  >
+                    {loading ? "..." : "Wyślij"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "#8c99b2",
+                  margin: "auto",
+                  fontSize: "1.2rem",
+                }}
+              >
+                👉 Wybierz rozmowę, aby rozpocząć czat
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 }

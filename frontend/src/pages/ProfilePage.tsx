@@ -28,12 +28,12 @@ export default function ProfilePage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [filteredOffers, setFilteredOffers] = useState<Offer[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+
   const [newEmail, setNewEmail] = useState("");
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [loadingOffers, setLoadingOffers] = useState(true);
 
-  // 🔹 Filtry
   const [filterCategory, setFilterCategory] = useState("");
   const [filterTitle, setFilterTitle] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
@@ -41,17 +41,16 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  // Pobieranie danych użytkownika i ofert
+  // FETCH USER + OFFERS
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/users/me", {
+        const { data } = await axios.get("http://localhost:3000/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUser(res.data);
-        setNewEmail(res.data.email);
-      } catch (err) {
-        console.error(err);
+        setUser(data);
+        setNewEmail(data.email);
+      } catch {
         navigate("/login");
       }
     };
@@ -68,11 +67,7 @@ export default function ProfilePage() {
               const { data: stats } = await axios.get(
                 `http://localhost:3000/reviews/offer/${offer.id}/stats`
               );
-              return {
-                ...offer,
-                avgRounded: stats.avgRounded,
-                ratingsCount: stats.ratingsCount,
-              };
+              return { ...offer, avgRounded: stats.avgRounded, ratingsCount: stats.ratingsCount };
             } catch {
               return { ...offer, avgRounded: null, ratingsCount: 0 };
             }
@@ -81,8 +76,6 @@ export default function ProfilePage() {
 
         setOffers(offersWithStats);
         setFilteredOffers(offersWithStats);
-      } catch (err) {
-        console.error("Błąd pobierania ofert:", err);
       } finally {
         setLoadingOffers(false);
       }
@@ -92,47 +85,50 @@ export default function ProfilePage() {
     fetchOffers();
   }, [navigate, token]);
 
-  // 🔹 Filtrowanie ofert
+  // FILTERING
   useEffect(() => {
-    let result = [...offers];
+    let r = [...offers];
 
     if (filterTitle.trim()) {
-      result = result.filter((o) =>
+      r = r.filter((o) =>
         o.title.toLowerCase().includes(filterTitle.toLowerCase())
       );
     }
 
     if (filterLocation.trim()) {
-      result = result.filter((o) =>
+      r = r.filter((o) =>
         o.localisation.toLowerCase().includes(filterLocation.toLowerCase())
       );
     }
 
     if (filterCategory) {
-      result = result.filter((o) => o.category === filterCategory);
+      r = r.filter((o) => o.category === filterCategory);
     }
 
-    setFilteredOffers(result);
+    setFilteredOffers(r);
   }, [filterTitle, filterLocation, filterCategory, offers]);
 
+  // CHANGE EMAIL
   const handleEmailChange = async () => {
     try {
-      const res = await axios.patch(
+      const { data } = await axios.patch(
         "http://localhost:3000/users/change-email",
         { email: newEmail },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      setUser((prev) => (prev ? { ...prev, email: data.email } : prev));
       setMessage("✅ Email został zaktualizowany");
-      setUser((prev) => (prev ? { ...prev, email: res.data.email } : prev));
-    } catch (err) {
+    } catch {
       setMessage("❌ Nie udało się zmienić adresu email");
-      console.error(err);
     }
   };
 
+  // UPLOAD AVATAR
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setUploading(true);
     setMessage("");
 
@@ -140,7 +136,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await axios.post(
+      const { data } = await axios.post(
         "http://localhost:3000/users/upload-avatar",
         formData,
         {
@@ -151,30 +147,29 @@ export default function ProfilePage() {
         }
       );
 
-      setUser((prev) =>
-        prev ? { ...prev, avatarUrl: res.data.avatarUrl } : prev
-      );
+      setUser((prev) => (prev ? { ...prev, avatarUrl: data.avatarUrl } : prev));
       setMessage("✅ Avatar został zaktualizowany!");
-    } catch (err) {
-      console.error("❌ Błąd uploadu avatara:", err);
-      setMessage("❌ Nie udało się wysłać avatara.");
+    } catch {
+      setMessage("❌ Błąd uploadu avatara");
     } finally {
       setUploading(false);
     }
   };
 
+  // DELETE OFFER
   const handleDeleteOffer = async (id: string) => {
-    if (!window.confirm("Czy na pewno chcesz usunąć tę ofertę?")) return;
+    if (!window.confirm("Czy na pewno chcesz usunąć?")) return;
+
     try {
       await axios.delete(`http://localhost:3000/offers/${id}/full`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setOffers((prev) => prev.filter((o) => o.id !== id));
       setFilteredOffers((prev) => prev.filter((o) => o.id !== id));
-      alert("✅ Oferta i jej dane zostały usunięte.");
-    } catch (err) {
-      console.error("Błąd usuwania oferty:", err);
-      alert("❌ Nie udało się usunąć oferty.");
+      alert("✅ Usunięto ofertę.");
+    } catch {
+      alert("❌ Błąd podczas usuwania.");
     }
   };
 
@@ -197,7 +192,9 @@ export default function ProfilePage() {
           maxWidth: "1300px",
         }}
       >
-        {/* LEWA STRONA – OFERTY */}
+        {/* ---------------------------------------------------------
+            LEWA STRONA — OFERTY
+        --------------------------------------------------------- */}
         <div
           style={{
             background: "#ffffff",
@@ -217,7 +214,7 @@ export default function ProfilePage() {
             Twoje oferty
           </h2>
 
-          {/* 🔹 Filtry */}
+          {/* FILTRY */}
           <div
             style={{
               display: "flex",
@@ -233,7 +230,7 @@ export default function ProfilePage() {
           >
             <input
               type="text"
-              placeholder="🔍 Tytuł oferty"
+              placeholder="🔍 Tytuł"
               value={filterTitle}
               onChange={(e) => setFilterTitle(e.target.value)}
               style={{
@@ -241,9 +238,6 @@ export default function ProfilePage() {
                 padding: "12px 14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",
-                background: "#fff",
-                fontSize: "0.95rem",
-                outline: "none",
               }}
             />
 
@@ -255,12 +249,9 @@ export default function ProfilePage() {
                 padding: "12px 14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",
-                background: "#fff",
-                fontSize: "0.95rem",
-                outline: "none",
               }}
             >
-              <option value="">Wszystkie kategorie</option>
+              <option value="">Wszystkie</option>
               <option value="Pomoc">Pomoc</option>
               <option value="Kuchnia">Kuchnia</option>
               <option value="Ogród">Ogród</option>
@@ -271,7 +262,7 @@ export default function ProfilePage() {
 
             <input
               type="text"
-              placeholder="📍 Miejsce"
+              placeholder="📍 Lokalizacja"
               value={filterLocation}
               onChange={(e) => setFilterLocation(e.target.value)}
               style={{
@@ -279,25 +270,21 @@ export default function ProfilePage() {
                 padding: "12px 14px",
                 borderRadius: "10px",
                 border: "1px solid #ccc",
-                background: "#fff",
-                fontSize: "0.95rem",
-                outline: "none",
               }}
             />
           </div>
 
-          {/* 🔹 Lista ofert */}
+          {/* LISTA OFERT — 3 KOLUMNY */}
           {loadingOffers ? (
-            <p style={{ textAlign: "center" }}>Ładowanie ofert...</p>
+            <p style={{ textAlign: "center" }}>Ładowanie...</p>
           ) : filteredOffers.length === 0 ? (
-            <p style={{ textAlign: "center" }}>Nie znaleziono ofert.</p>
+            <p style={{ textAlign: "center" }}>Brak ofert.</p>
           ) : (
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gridTemplateColumns: "repeat(3, 1fr)",
                 gap: "20px",
-                justifyItems: "center",
               }}
             >
               {filteredOffers.map((offer) => (
@@ -309,8 +296,8 @@ export default function ProfilePage() {
                   price={offer.prize}
                   category={offer.category}
                   images={
-                    offer.images && offer.images.length > 0
-                      ? offer.images.map((img) => img.url)
+                    offer.images?.length
+                      ? offer.images.map((i) => i.url)
                       : ["/logo.png"]
                   }
                   rating={offer.avgRounded ?? undefined}
@@ -321,7 +308,6 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* 🔹 Modal szczegółów oferty */}
           {selectedOffer && (
             <OfferModal
               offer={selectedOffer}
@@ -339,27 +325,24 @@ export default function ProfilePage() {
                   style={{
                     background: "linear-gradient(90deg, #007bff, #00bfff)",
                     color: "white",
-                    border: "none",
-                    borderRadius: "10px",
                     padding: "10px 20px",
+                    borderRadius: "10px",
+                    border: "none",
                     cursor: "pointer",
-                    fontWeight: 600,
-                    boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
                   }}
                   onClick={() => navigate(`/offers/edit/${selectedOffer.id}`)}
                 >
                   ✏️ Edytuj
                 </button>
+
                 <button
                   style={{
                     background: "linear-gradient(90deg, #ff4b5c, #dc3545)",
                     color: "white",
-                    border: "none",
-                    borderRadius: "10px",
                     padding: "10px 20px",
+                    borderRadius: "10px",
+                    border: "none",
                     cursor: "pointer",
-                    fontWeight: 600,
-                    boxShadow: "0 4px 12px rgba(220,53,69,0.3)",
                   }}
                   onClick={() => handleDeleteOffer(selectedOffer.id)}
                 >
@@ -370,7 +353,9 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* PRAWA STRONA – PROFIL */}
+        {/* ---------------------------------------------------------
+            PRAWA STRONA — PROFIL (NAPRAWIONA)
+        --------------------------------------------------------- */}
         <div
           style={{
             background: "#ffffff",
@@ -378,6 +363,12 @@ export default function ProfilePage() {
             boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
             padding: "24px",
             height: "fit-content",
+            width: "100%",
+            maxWidth: "380px",
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
           <h2
@@ -393,10 +384,18 @@ export default function ProfilePage() {
 
           {user && (
             <>
-              <div style={{ textAlign: "center", marginBottom: "20px" }}>
+              {/* AVATAR BLOK */}
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  marginBottom: "20px",
+                }}
+              >
                 <img
                   src={user.avatarUrl || "/logo.png"}
-                  alt="avatar"
                   style={{
                     width: "120px",
                     height: "120px",
@@ -407,58 +406,69 @@ export default function ProfilePage() {
                   }}
                 />
 
-                <div>
-                  <label
-                    htmlFor="avatarUpload"
-                    style={{
-                      display: "inline-block",
-                      background: "linear-gradient(90deg, #007bff, #00bfff)",
-                      color: "white",
-                      padding: "10px 16px",
-                      borderRadius: "10px",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
-                    }}
-                  >
-                    {uploading ? "Wysyłanie..." : "Zmień zdjęcie"}
-                  </label>
-                  <input
-                    id="avatarUpload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    style={{ display: "none" }}
-                  />
-                </div>
+                <label
+                  htmlFor="avatarUpload"
+                  style={{
+                    display: "inline-block",
+                    background: "linear-gradient(90deg, #007bff, #00bfff)",
+                    color: "white",
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
+                  }}
+                >
+                  {uploading ? "Wysyłanie..." : "Zmień zdjęcie"}
+                </label>
+
+                <input
+                  id="avatarUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  style={{ display: "none" }}
+                />
 
                 <h3 style={{ marginTop: "12px", color: "#333" }}>
                   {user.username}
                 </h3>
               </div>
 
-              <div>
-                <label
-                  style={{ fontWeight: 600, display: "block", marginBottom: 6 }}
-                >
-                  Email:
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  style={{
-                    width: "100%",
-                    marginBottom: "12px",
-                    padding: "12px 14px",
-                    borderRadius: "10px",
-                    border: "1px solid #ccc",
-                    background: "#f9f9f9",
-                    color: "#333",
-                    outline: "none",
-                    fontSize: "0.95rem",
-                  }}
-                />
+              {/* FORMULARZ */}
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{ fontWeight: 600, display: "block", marginBottom: 6 }}
+                  >
+                    Email:
+                  </label>
+<input
+  type="email"
+  value={newEmail}
+  onChange={(e) => setNewEmail(e.target.value)}
+  style={{
+    width: "100%",
+    padding: "1px 1px",
+    borderRadius: "8px",
+    border: "1px solid #ccc",
+    background: "#fff",
+    fontSize: "0.95rem",
+    outline: "none",
+    height: "44px",
+    textAlign: "center",   // 🔥 WYŚRODKOWANY TEKST
+  }}
+/>
+
+                </div>
+
                 <button
                   onClick={handleEmailChange}
                   style={{
@@ -466,18 +476,15 @@ export default function ProfilePage() {
                     background: "linear-gradient(90deg, #00b85c, #28a745)",
                     color: "white",
                     padding: "12px",
-                    border: "none",
                     borderRadius: "10px",
+                    border: "none",
                     cursor: "pointer",
                     fontWeight: 600,
-                    boxShadow: "0 4px 12px rgba(40,167,69,0.3)",
                   }}
                 >
                   Zapisz email
                 </button>
-              </div>
 
-              <div style={{ marginTop: "14px" }}>
                 <button
                   onClick={() => navigate("/change-password")}
                   style={{
@@ -485,29 +492,28 @@ export default function ProfilePage() {
                     background: "linear-gradient(90deg, #007bff, #00bfff)",
                     color: "white",
                     padding: "12px",
-                    border: "none",
                     borderRadius: "10px",
+                    border: "none",
                     cursor: "pointer",
                     fontWeight: 600,
-                    boxShadow: "0 4px 12px rgba(0,123,255,0.3)",
                   }}
                 >
                   Zmień hasło
                 </button>
-              </div>
 
-              {message && (
-                <p
-                  style={{
-                    marginTop: "15px",
-                    color: message.includes("✅") ? "#28a745" : "#dc3545",
-                    textAlign: "center",
-                    fontWeight: 600,
-                  }}
-                >
-                  {message}
-                </p>
-              )}
+                {message && (
+                  <p
+                    style={{
+                      marginTop: "10px",
+                      color: message.includes("✅") ? "#28a745" : "#dc3545",
+                      textAlign: "center",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {message}
+                  </p>
+                )}
+              </div>
             </>
           )}
         </div>

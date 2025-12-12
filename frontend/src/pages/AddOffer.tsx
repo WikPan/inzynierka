@@ -25,6 +25,19 @@ export default function AddOffer() {
   const MAX_TITLE = 60;
   const MAX_DESC = 500;
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "10px",
+    border: "1px solid #ccc",
+    background: "#f9f9f9",
+    color: "#333",
+    fontSize: "0.95rem",
+    outline: "none",
+    height: "44px",
+    boxSizing: "border-box",
+  };
+
   const getSuggestions = async (value: string): Promise<Suggestion[]> => {
     const q = value.trim();
     if (q.length < 2) return [];
@@ -44,8 +57,6 @@ export default function AddOffer() {
     const results = await getSuggestions(value);
     setSuggestions(results);
   };
-
-  const onSuggestionsClearRequested = () => setSuggestions([]);
 
   const onSuggestionSelected = (
     _e: any,
@@ -86,27 +97,28 @@ export default function AddOffer() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return alert("Brak tokena — zaloguj się ponownie.");
+
     if (title.length > MAX_TITLE) return alert("Tytuł za długi!");
     if (description.length > MAX_DESC) return alert("Opis za długi!");
 
     try {
-      if (!token) throw new Error("Brak tokena (zaloguj się ponownie)");
+      await axios.post(
+        "http://localhost:3000/offers",
+        {
+          title,
+          description,
+          prize: parseFloat(prize),
+          category,
+          localisation,
+          latitude,
+          longitude,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      const body: any = {
-        title,
-        description,
-        prize: parseFloat(prize),
-        category,
-        localisation,
-        latitude,
-        longitude,
-      };
+      alert("✅ Oferta dodana!");
 
-      await axios.post("http://localhost:3000/offers", body, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      alert("✅ Oferta dodana pomyślnie!");
       setTitle("");
       setDescription("");
       setPrize("");
@@ -159,65 +171,39 @@ export default function AddOffer() {
             type="text"
             placeholder="Tytuł oferty"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
             maxLength={MAX_TITLE}
-            style={{
-              width: "100%",
-              padding: "12px 14px",
-              borderRadius: "10px",
-              border: "1px solid #ccc",
-              background: "#f9f9f9",
-              color: "#333",
-              fontSize: "0.95rem",
-              outline: "none",
-            }}
+            onChange={(e) => setTitle(e.target.value)}
+            style={inputStyle}
           />
+
           <textarea
             placeholder="Opis oferty..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            required
             maxLength={MAX_DESC}
             style={{
-              width: "100%",
-              padding: "12px 14px",
-              borderRadius: "10px",
-              border: "1px solid #ccc",
-              background: "#f9f9f9",
-              color: "#333",
+              ...inputStyle,
               minHeight: "120px",
               resize: "none",
-              outline: "none",
+              height: "auto",
             }}
           />
+
           <input
             type="text"
             placeholder="Cena (zł)"
             value={prize}
             onChange={(e) => setPrize(e.target.value.replace(",", "."))}
-            style={{
-              width: "100%",
-              padding: "12px 14px",
-              borderRadius: "10px",
-              border: "1px solid #ccc",
-              background: "#f9f9f9",
-              color: "#333",
-              outline: "none",
-            }}
+            style={inputStyle}
           />
 
+          {/* KATEGORIA – ten sam styl, ta sama wysokość */}
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            required
             style={{
-              padding: "12px",
-              borderRadius: "10px",
-              border: "1px solid #ccc",
-              background: "#f9f9f9",
-              color: "#333",
-              outline: "none",
+              ...inputStyle,
+              paddingRight: "14px",
             }}
           >
             <option value="">Wybierz kategorię</option>
@@ -229,6 +215,7 @@ export default function AddOffer() {
             <option value="Inne">Inne</option>
           </select>
 
+          {/* LOKALIZACJA – Autosuggest wyrównany do inputów */}
           <Autosuggest
             suggestions={suggestions}
             onSuggestionsFetchRequested={onSuggestionsFetchRequested}
@@ -238,19 +225,34 @@ export default function AddOffer() {
             renderSuggestion={(s) => (
               <div style={{ padding: "8px 12px", color: "#333" }}>{s.label}</div>
             )}
+            theme={{
+              container: {
+                position: "relative",
+                width: "100%",
+              },
+              input: {
+                ...inputStyle,
+              },
+              suggestionsContainer: {
+                background: "#fff",
+                border: "1px solid #ccc",
+                borderRadius: "10px",
+                marginTop: "4px",
+                position: "absolute",
+                width: "100%",
+                zIndex: 10,
+              },
+              suggestionsList: {
+                listStyleType: "none",
+                padding: 0,
+                margin: 0,
+              },
+            }}
             inputProps={{
               placeholder: "📍 Podaj miejscowość",
               value: localisation,
-              onChange: (_: any, { newValue }: any) => setLocalisation(newValue),
-              style: {
-                padding: "12px",
-                borderRadius: "10px",
-                border: "1px solid #ccc",
-                background: "#f9f9f9",
-                color: "#333",
-                width: "100%",
-                outline: "none",
-              },
+              onChange: (_: any, { newValue }: any) =>
+                setLocalisation(newValue),
             }}
           />
 

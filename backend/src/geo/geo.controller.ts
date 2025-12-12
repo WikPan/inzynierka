@@ -9,12 +9,11 @@ export class GeoController {
 
     const input = query.toLowerCase();
 
-    // Filtrujemy tylko te miejscowości, które pasują do wpisanego ciągu
     const results = data
       .filter((item: any) =>
         item.Name.toLowerCase().includes(input)
       )
-      .slice(0, 10) // maksymalnie 10 wyników
+      .slice(0, 10)
       .map((item: any) => ({
         label: `${item.Name}, ${item.Province}`,
         city: item.Name,
@@ -35,7 +34,6 @@ export class GeoController {
     const longitude = parseFloat(lon);
     if (isNaN(latitude) || isNaN(longitude)) return [];
 
-    // znajdź najbliższą miejscowość
     const nearest = (data as any[]).reduce((closest, current) => {
       const dLat = latitude - current.Latitude;
       const dLon = longitude - current.Longitude;
