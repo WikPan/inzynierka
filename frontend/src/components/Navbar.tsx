@@ -12,7 +12,7 @@ export default function Navbar({
 
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
-  const accountType = user?.accountType?.toLowerCase();
+  const accountType = user?.accountType?.toLowerCase(); // "user" | "admin"
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -20,6 +20,20 @@ export default function Navbar({
     setIsLoggedIn(false);
     navigate("/");
   };
+
+  const navLinkStyle: React.CSSProperties = {
+    color: "white",
+    textDecoration: "none",
+    padding: "6px 10px",
+    borderRadius: "6px",
+    transition: "0.2s",
+  };
+
+  const hoverOn = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) =>
+    (e.currentTarget.style.background = "rgba(255,255,255,0.18)");
+
+  const hoverOff = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) =>
+    (e.currentTarget.style.background = "transparent");
 
   return (
     <nav
@@ -37,14 +51,9 @@ export default function Navbar({
         boxShadow: "0 2px 14px rgba(0,0,0,0.15)",
       }}
     >
-      {/* LEFT — Logo */}
+      {/* LEFT — LOGO */}
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          cursor: "pointer",
-        }}
+        style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}
         onClick={() => navigate("/")}
       >
         <img
@@ -54,162 +63,104 @@ export default function Navbar({
             width: "58px",
             height: "58px",
             objectFit: "contain",
-            filter: `
-              drop-shadow(0 0 4px rgba(0, 160, 255, 0.55))
-              drop-shadow(0 0 7px rgba(0, 110, 255, 0.35))
-              drop-shadow(0 0 12px rgba(0, 180, 255, 0.25))
-            `,
-            transition: "0.25s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.filter =
-              "drop-shadow(0 0 6px rgba(0, 180, 255, 0.90)) drop-shadow(0 0 14px rgba(0, 160, 255, 0.60))";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.filter =
-              "drop-shadow(0 0 4px rgba(0, 160, 255, 0.55)) drop-shadow(0 0 7px rgba(0, 110, 255, 0.35)) drop-shadow(0 0 12px rgba(0, 180, 255, 0.25))";
+            filter:
+              "drop-shadow(0 0 4px rgba(0, 160, 255, 0.55)) drop-shadow(0 0 10px rgba(0, 180, 255, 0.35))",
           }}
         />
-
-        <span
-          style={{
-            fontSize: "1.45rem",
-            fontWeight: 700,
-            color: "white",
-            letterSpacing: "0.5px",
-          }}
-        >
-          Oofferto
-        </span>
+        <span style={{ fontSize: "1.45rem", fontWeight: 700 }}>Oofferto</span>
       </div>
 
-      {/* RIGHT — Links */}
+      {/* RIGHT — NAV */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "1.6rem",
+          gap: "1.4rem",
           fontSize: "1.05rem",
           fontWeight: 500,
         }}
       >
-        {/* Unified style for nav links */}
-        {[
-          { label: "Strona główna", path: "/" },
-          { label: "Oferty", path: "/offers" },
-        ].map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            style={{
-              color: "white",
-              textDecoration: "none",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              transition: "0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.18)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
-          >
-            {item.label}
-          </Link>
-        ))}
+        {/* PUBLIC */}
+        <Link to="/" style={navLinkStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>
+          Strona główna
+        </Link>
 
-        {isLoggedIn ? (
+        <Link
+          to="/offers"
+          style={navLinkStyle}
+          onMouseEnter={hoverOn}
+          onMouseLeave={hoverOff}
+        >
+          Oferty
+        </Link>
+
+        {/* LOGGED (USER + ADMIN) */}
+        {isLoggedIn && (
           <>
-            {accountType === "admin" ? (
-              <>
-                <Link
-                  to="/admin"
-                  style={{
-                    color: "white",
-                    textDecoration: "none",
-                    padding: "6px 10px",
-                    borderRadius: "6px",
-                    transition: "0.2s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.18)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  👑 Panel admina
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/add-offer"
-                  style={{
-                    color: "white",
-                    textDecoration: "none",
-                    padding: "6px 10px",
-                    borderRadius: "6px",
-                    transition: "0.2s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.18)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  ➕ Dodaj ofertę
-                </Link>
-
-                <Link
-                  to="/profile"
-                  style={{
-                    color: "white",
-                    textDecoration: "none",
-                    padding: "6px 10px",
-                    borderRadius: "6px",
-                    transition: "0.2s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.18)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  👤 Profil
-                </Link>
-              </>
-            )}
-
-            <button
-              onClick={handleLogout}
-              style={{
-                background: "rgba(255,255,255,0.25)",
-                color: "white",
-                border: "none",
-                borderRadius: "10px",
-                padding: "8px 18px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "0.25s",
-                backdropFilter: "blur(6px)",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "rgba(255,255,255,0.35)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "rgba(255,255,255,0.25)")
-              }
+            <Link
+              to="/messages"
+              style={navLinkStyle}
+              onMouseEnter={hoverOn}
+              onMouseLeave={hoverOff}
             >
-              Wyloguj
-            </button>
+              💬 Wiadomości
+            </Link>
+
+            <Link
+              to="/add-offer"
+              style={navLinkStyle}
+              onMouseEnter={hoverOn}
+              onMouseLeave={hoverOff}
+            >
+              ➕ Dodaj ofertę
+            </Link>
           </>
+        )}
+
+        {/* USER ONLY */}
+        {isLoggedIn && accountType === "user" && (
+          <Link
+            to="/profile"
+            style={navLinkStyle}
+            onMouseEnter={hoverOn}
+            onMouseLeave={hoverOff}
+          >
+            👤 Profil
+          </Link>
+        )}
+
+        {/* ADMIN ONLY */}
+        {isLoggedIn && accountType === "admin" && (
+          <Link
+            to="/admin"
+            style={navLinkStyle}
+            onMouseEnter={hoverOn}
+            onMouseLeave={hoverOff}
+          >
+            👑 Panel admina
+          </Link>
+        )}
+
+        {/* AUTH */}
+        {isLoggedIn ? (
+          <button
+            onClick={handleLogout}
+            style={{
+              background: "rgba(255,255,255,0.25)",
+              color: "white",
+              border: "none",
+              borderRadius: "10px",
+              padding: "8px 18px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "0.25s",
+              backdropFilter: "blur(6px)",
+            }}
+            onMouseEnter={hoverOn}
+            onMouseLeave={hoverOff}
+          >
+            Wyloguj
+          </button>
         ) : (
           <>
             <Link
@@ -222,14 +173,9 @@ export default function Navbar({
                 textDecoration: "none",
                 fontWeight: 600,
                 transition: "0.25s",
-                backdropFilter: "blur(6px)",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "rgba(255,255,255,0.35)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "rgba(255,255,255,0.25)")
-              }
+              onMouseEnter={hoverOn}
+              onMouseLeave={hoverOff}
             >
               Zaloguj się
             </Link>
